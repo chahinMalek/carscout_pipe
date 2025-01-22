@@ -1,0 +1,26 @@
+api:
+  base_url: "https://olx.ba/api"
+  category_id: "18"
+  headers:
+    User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
+db:
+  host: mongodb+srv://malekc:eiPzmQGYi7DU66kL@cluster0.blz3u.mongodb.net/
+  database: vsa
+  collections:
+    vehicles: "vehicles"
+
+paths:
+  base_path: "data"
+  brands_and_models_prefix: "brands_and_models"
+  brands_prefix: "brands"
+  listings_prefix: "listings"
+  vehicles_prefix: "vehicles"
+
+selenium:
+  chrome_options:
+    - --disable-search-engine-choice-screen
+    - --headless=new
+    - --no-sandbox
+    - --disable-dev-shm-usage
+    - --disable-gpu
