@@ -40,10 +40,6 @@ class ConfigManager:
         return str(Path(self.base_path) / self.config.paths['brands_and_models_prefix'])
 
     @property
-    def brands_path(self) -> str:
-        return str(Path(self.base_path) / self.config.paths['brands_prefix'])
-
-    @property
     def listings_path(self) -> str:
         return str(Path(self.base_path) / self.config.paths['listings_prefix'])
 

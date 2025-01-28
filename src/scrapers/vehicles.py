@@ -2,6 +2,7 @@ import time
 from typing import List, Dict
 
 from backoff import on_exception, expo
+from datetime import datetime
 from requests import RequestException
 from scrapy import Selector
 from selenium.webdriver.common.by import By
@@ -19,7 +20,7 @@ class VehicleScraper(SeleniumScraper):
     def __init__(self, config_manager: ConfigManager, file_service: LocalFileService):
         super().__init__(config_manager, file_service)
 
-    @on_exception(expo, RequestException, max_tries=3)
+    @on_exception(expo, RequestException, max_tries=3, max_time=60)
     def scrape(self, listings: List[Dict]) -> List[Dict]:
         """Scrape vehicle details from a list of listings"""
         vehicles = []
@@ -30,7 +31,9 @@ class VehicleScraper(SeleniumScraper):
                     url = listing["url"]
                     vehicle = self._parse_vehicle_info(url)
                     if vehicle:
-                        vehicles.append(vehicle.model_dump())
+                        vehicle_dict = vehicle.model_dump()
+                        vehicle_dict["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        vehicles.append(vehicle_dict)
                 except Exception as err:
                     print(f"Error scraping vehicle info for URL: {url}. Error: {err}")
                     continue
@@ -83,7 +86,8 @@ class VehicleScraper(SeleniumScraper):
                 if params["price"].lower().strip() == "na upit":
                     params["price"] = None
                 else:
-                    params["price"] = float(params["price"].split(" ")[0].replace(".", "").replace("KM", ""))
+                    price_str = params["price"].split(" ")[0].replace(".", "").replace("KM", "")
+                    params["price"] = float(price_str.replace(",", "."))
             if params["mileage"]:
                 params["mileage"] = int(params["mileage"].split(" ")[0].replace(".", "").replace("km", ""))
             if params["build_year"]:

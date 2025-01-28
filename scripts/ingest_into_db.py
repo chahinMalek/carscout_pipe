@@ -2,7 +2,6 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-import pandas as pd
 from pymongo import MongoClient
 
 from src.config import ConfigManager
@@ -46,7 +45,7 @@ if __name__ == "__main__":
         df["specs"] = df["specs"].apply(lambda s: eval(s))
         df = df.loc[~df["url"].isin(existing_urls)]
         df = df.reset_index(drop=True)
-        df["ingested_at"] = datetime.utcnow()
+        df["ingested_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         records = df.to_dict(orient="records")
 
         # Insert records into MongoDB collection

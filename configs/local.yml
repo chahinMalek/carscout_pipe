@@ -5,7 +5,7 @@ api:
     User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
 db:
-  host: mongodb+srv://malekc:eiPzmQGYi7DU66kL@cluster0.blz3u.mongodb.net/
+  host: 
   database: vsa
   collections:
     vehicles: "vehicles"
@@ -13,7 +13,6 @@ db:
 paths:
   base_path: "data"
   brands_and_models_prefix: "brands_and_models"
-  brands_prefix: "brands"
   listings_prefix: "listings"
   vehicles_prefix: "vehicles"
 

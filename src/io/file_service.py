@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Union, List
 
 import pandas as pd
+import shutil
 
 
 class FileService(ABC):
@@ -11,6 +12,11 @@ class FileService(ABC):
     @abstractmethod
     def make_directory(self, path: Union[str, Path], parents: bool = False) -> None:
         """Create a directory at the specified path"""
+        pass
+
+    @abstractmethod
+    def remove_directory(self, path: Union[str, Path]) -> None:
+        """Remove directory at the specified path"""
         pass
 
     @abstractmethod
@@ -60,6 +66,10 @@ class LocalFileService(FileService):
     def make_directory(self, path: Union[str, Path], parents: bool = False) -> None:
         path = Path(path)
         path.mkdir(parents=parents, exist_ok=True)
+
+    def remove_directory(self, path: Union[str, Path]) -> None:
+        if self.directory_exists(path):
+            shutil.rmtree(path, ignore_errors=True)
 
     def directory_exists(self, path: Union[str, Path]) -> bool:
         path = Path(path)
