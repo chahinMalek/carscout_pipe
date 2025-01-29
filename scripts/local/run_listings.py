@@ -2,12 +2,12 @@ import argparse
 import uuid
 import multiprocessing
 from pathlib import Path
-from typing import List
 
 from src.config import Config, ConfigManager
 from src.io.file_service import LocalFileService
 from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.listings import ScrapeListingsStep
+from src.scrapers.listings import ListingsScraper
 
 def process_batch(context: StepContext) -> None:
     """Process a single batch with proper error handling."""
@@ -51,6 +51,7 @@ def main():
                 run_id=run_id,
                 config_manager=config_manager,
                 file_service=file_service,
+                scraper_class=ListingsScraper,
                 params={
                     "batch_id": batch_file.stem,
                     "max_pages": args.max_pages

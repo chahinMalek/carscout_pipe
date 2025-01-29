@@ -2,8 +2,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.scrapers.brands_models import BrandsAndModelsScraper
-
 from src.pipeline.steps.base import PipelineStep, StepContext
 from src.pipeline.output import PipelineOutput
 
@@ -23,9 +21,9 @@ class ScrapeBrandsAndModelsStep(PipelineStep):
         # Validate inputs
         if not context.file_service.file_exists(brands_path):
             raise ValueError(f"Brands file not found at {brands_path}")
-        
+
         # Initialize scraper
-        scraper = BrandsAndModelsScraper(context.config_manager, context.file_service)
+        scraper = context.scraper_class(context.config_manager, context.file_service)        
         
         # Setup output directory
         output_dir = Path(context.config_manager.brands_and_models_path) / context.run_id

@@ -2,12 +2,12 @@ import argparse
 import multiprocessing
 import uuid
 from pathlib import Path
-from typing import List
 
 from src.config import Config, ConfigManager
 from src.io.file_service import LocalFileService
 from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.vehicles import ScrapeVehiclesStep
+from src.scrapers.vehicles import VehicleScraper
 
 def process_batch(context: StepContext) -> None:
     """Process a single batch with proper error handling."""
@@ -49,6 +49,7 @@ def main():
                 run_id=run_id,
                 config_manager=config_manager,
                 file_service=file_service,
+                scraper_class=VehicleScraper,
                 params={
                     "batch_id": batch_file.stem
                 }

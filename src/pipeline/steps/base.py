@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from typing import Dict, Any
-from pathlib import Path
 
 from src.config import ConfigManager
 from src.io.file_service import FileService
+from src.scrapers.base import BaseScraper
+from typing import Type
+
 
 @dataclass
 class StepContext:
@@ -12,6 +14,8 @@ class StepContext:
     config_manager: ConfigManager
     file_service: FileService
     params: Dict[str, Any]
+    scraper_class: Type['BaseScraper'] | None = None
+
 
 class PipelineStep:
     """Base class for pipeline steps"""

@@ -23,10 +23,7 @@ class ScrapeVehiclesStep(PipelineStep):
         context.file_service.make_directory(output_dir, parents=True)
         
         # Initialize scraper
-        scraper = VehicleScraper(
-            config_manager=context.config_manager,
-            file_service=context.file_service
-        )
+        scraper = context.scraper_class(context.config_manager, context.file_service)
         
         # Read and prepare input batch
         listings = context.file_service.read_parquet(input_path)

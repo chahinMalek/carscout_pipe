@@ -27,11 +27,8 @@ class ScrapeListingsStep(PipelineStep):
         context.file_service.make_directory(output_dir, parents=True)
         
         # Initialize scraper
-        scraper = ListingsScraper(
-            config_manager=context.config_manager,
-            file_service=context.file_service,
-            max_pages=max_pages
-        )
+        kwargs = {"max_pages": max_pages}
+        scraper = context.scraper_class(context.config_manager, context.file_service, **kwargs)
         
         # Read input batch
         brands_and_models = context.file_service.read_parquet(input_path)

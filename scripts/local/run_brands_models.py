@@ -5,6 +5,7 @@ from src.config import Config, ConfigManager
 from src.io.file_service import LocalFileService
 from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.brands_models import ScrapeBrandsAndModelsStep
+from src.scrapers.brands_models import BrandsAndModelsScraper
 
 def main():
     parser = argparse.ArgumentParser(
@@ -30,6 +31,7 @@ def main():
         run_id=args.run_id or str(uuid.uuid4()),
         config_manager=config_manager,
         file_service=file_service,
+        scraper_class=BrandsAndModelsScraper,
         params={
             "brands_file": args.brands,
             "chunk_size": args.chunk_size
