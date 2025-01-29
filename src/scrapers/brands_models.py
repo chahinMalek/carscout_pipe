@@ -1,7 +1,5 @@
 from typing import List, Dict
 import requests
-import pandas as pd
-from pathlib import Path
 
 from .base import BaseScraper
 from src.config import ConfigManager
@@ -16,19 +14,6 @@ class BrandsAndModelsScraper(BaseScraper):
         """Implementation of the abstract scrape method"""
         brands_data = self._scrape_brands(brands)
         return self._scrape_models(brands_data)
-
-    def save_chunks(self, data: pd.DataFrame, output_dir: Path, chunk_size: int) -> None:
-        """Save data in chunks to parquet files"""
-        num_chunks = (len(data) + chunk_size - 1) // chunk_size
-        print(f"Saving {num_chunks} chunks into {output_dir.resolve()}...")
-        
-        for i in range(num_chunks):
-            start_idx = i * chunk_size
-            end_idx = min((i + 1) * chunk_size, len(data))
-            chunk = data.iloc[start_idx:end_idx]
-            
-            chunk_path = output_dir / f"{i:04d}.parquet"
-            self.file_service.write_parquet(chunk, chunk_path, index=False)
 
     def _scrape_brands(self, brands: List[str]) -> List[Dict]:
         """Scrape brands data for given brand slugs"""

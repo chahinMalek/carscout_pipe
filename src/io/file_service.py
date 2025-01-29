@@ -25,6 +25,11 @@ class FileService(ABC):
         pass
 
     @abstractmethod
+    def list_files(self, path: Union[str, Path], pattern: str = "*") -> List[Path]:
+        """List all files in the specified directory"""
+        pass
+
+    @abstractmethod
     def file_exists(self, path: Union[str, Path]) -> bool:
         """Check if file exists at the specified path"""
         pass
@@ -47,6 +52,11 @@ class FileService(ABC):
     @abstractmethod
     def write_parquet(self, df: pd.DataFrame, path: Union[str, Path], **kwargs) -> None:
         """Write pandas DataFrame to Parquet file"""
+        pass
+
+    @abstractmethod
+    def write_parquet_chunked(self, df: pd.DataFrame, path: Union[str, Path], chunk_size: int, **kwargs) -> None:
+        """Write pandas DataFrame to Parquet file in chunks"""
         pass
 
     @abstractmethod
@@ -75,6 +85,10 @@ class LocalFileService(FileService):
         path = Path(path)
         return path.is_dir()
 
+    def list_files(self, path: Union[str, Path], pattern: str = "*") -> List[Path]:
+        path = Path(path)
+        return list(path.glob(pattern))
+
     def file_exists(self, path: Union[str, Path]) -> bool:
         path = Path(path)
         return path.is_file()
@@ -90,6 +104,16 @@ class LocalFileService(FileService):
 
     def write_parquet(self, df: pd.DataFrame, path: Union[str, Path], **kwargs) -> None:
         df.to_parquet(path, **kwargs)
+
+    def write_parquet_chunked(self, df: pd.DataFrame, path: Union[str, Path], chunk_size: int, **kwargs) -> None:
+        """Write pandas DataFrame to Parquet file in chunks"""
+        num_chunks = (len(df) + chunk_size - 1) // chunk_size
+        for i in range(num_chunks):
+            start_idx = i * chunk_size
+            end_idx = min((i + 1) * chunk_size, len(df))
+            chunk = df.iloc[start_idx:end_idx]
+            chunk_path = path / f"{i:06d}.parquet"
+            self.write_parquet(chunk, chunk_path, **kwargs)
 
     def read_lines(self, path: Union[str, Path]) -> List[str]:
         with open(path, 'r') as f:
