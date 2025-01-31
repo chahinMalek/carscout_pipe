@@ -14,22 +14,26 @@ from src.data_models.listing import VehicleListing
 class ListingsScraper(SeleniumScraper):
     def __init__(self, config_manager: ConfigManager, file_service: LocalFileService, max_pages: int = 5):
         super().__init__(config_manager, file_service)
-        self.search_params = {
+        self._search_params = {
             "attr": "",
             "attr_encoded": "1",
             "category_id": config_manager.config.api["category_id"],
             "created_gte": "-1+month"
         }
-        self.max_pages = max_pages
+        self._max_pages = max_pages
+        self._patience = 3
 
     def scrape(self, input_data: List[Dict]) -> List[Dict]:
         """Scrape listings for given brands and models data"""
         all_listings: List[Dict] = []
 
         for row in tqdm(input_data, total=len(input_data)):
-            brand_id = row["brand_id"]
-            model_id = row["model_id"]
-            all_listings.extend(self._scrape_listings(brand_id, model_id))
+            try:
+                brand_id = row["brand_id"]
+                model_id = row["model_id"]
+                all_listings.extend(self._scrape_listings(brand_id, model_id))
+            except Exception as err:
+                print(f"Error scraping listings for {brand_id} {model_id}: {err}")
 
         self.cleanup()
         return [listing.model_dump() for listing in all_listings]
@@ -37,9 +41,9 @@ class ListingsScraper(SeleniumScraper):
     def _scrape_listings(self, brand_id: str, model_id: str) -> List[Dict]:
         """Scrape listings for a specific brand and model combination"""
         listings = []
-        
-        for page in range(1, self.max_pages + 1):
-            params = self.search_params | {
+        patience = self._patience
+        for page in range(1, self._max_pages + 1):
+            params = self._search_params | {
                 "brand": brand_id,
                 "models": model_id,
                 "brands": brand_id,
@@ -49,7 +53,12 @@ class ListingsScraper(SeleniumScraper):
             print(f"INFO - Scraping: {url} ...")
             page_listings = self._scrape_listings_page(url)
             listings.extend(page_listings)
-            
+            if len(page_listings) == 0:
+                patience -= 1
+                if patience <= 0:
+                    break
+            else:
+                patience = self._patience
         return listings
 
     @on_exception(expo, RequestException, max_tries=3, max_time=60)

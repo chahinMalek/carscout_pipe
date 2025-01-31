@@ -25,12 +25,15 @@ class VehicleScraper(SeleniumScraper):
         vehicles = []
 
         for listing in tqdm(listings, desc="Scraping vehicles"):
-            url = listing["url"]
-            vehicle = self._parse_vehicle_info(url)
-            if vehicle:
-                vehicle_dict = vehicle.model_dump()
-                vehicle_dict["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                vehicles.append(vehicle_dict)
+            try:
+                url = listing["url"]
+                vehicle = self._parse_vehicle_info(url)
+                if vehicle:
+                    vehicle_dict = vehicle.model_dump()
+                    vehicle_dict["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    vehicles.append(vehicle_dict)
+            except Exception as err:
+                print(f"Error scraping vehicle info from {url}: {err}")
 
         self.cleanup()
         return vehicles
