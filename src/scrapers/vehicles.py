@@ -8,13 +8,15 @@ from scrapy import Selector
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from tqdm import tqdm
+from pydantic import ValidationError
 
 from src.config import ConfigManager
 from src.io.file_service import LocalFileService
 from src.data_models.vehicle import Vehicle
 from src.scrapers.selenium_base import SeleniumScraper
-from selenium.common.exceptions import TimeoutException
+from src.exceptions import VehiclePageNotFound
 
 
 class VehicleScraper(SeleniumScraper):
@@ -35,8 +37,14 @@ class VehicleScraper(SeleniumScraper):
                         "%Y-%m-%d %H:%M:%S"
                     )
                     vehicles.append(vehicle_dict)
+            except TimeoutException:
+                print(f"Error retrieving vehicle info from {url}: Timed out.")
+            except VehiclePageNotFound as err:
+                print(f"Error retrieving vehicle info from {url}: {err}")
+            except ValidationError as err:
+                print(f"Error parsing vehicle info from {url}: {err}")
             except Exception as err:
-                print(f"Error scraping vehicle info from {url}: {err}")
+                print(f"Unexpected error scraping vehicle info from {url}: {err}")
 
         self.cleanup()
         return vehicles
@@ -46,7 +54,7 @@ class VehicleScraper(SeleniumScraper):
         RequestException,
         max_tries=3,
         max_time=60,
-        giveup=lambda e: isinstance(e, TimeoutException),
+        giveup=lambda e: isinstance(e, VehiclePageNotFound),
     )
     def _parse_vehicle_info(self, url: str) -> Vehicle | None:
         """Parse vehicle info from a given URL"""
@@ -61,16 +69,10 @@ class VehicleScraper(SeleniumScraper):
             )
             selector = Selector(text=self.driver.page_source)
 
-        except TimeoutException:
+        except TimeoutException as err:
             if "Oprostite, ne možemo pronaći ovu stranicu" in self.driver.page_source:
-                print(f"Error retrieving vehicle info from {url}: 404.")
-            else:
-                print(f"Error retrieving vehicle info from {url}: Timed out.")
-            return None
-
-        except Exception as err:
-            print(f"Unexpected error retrieving vehicle info from {url}: {err}")
-            return None
+                raise VehiclePageNotFound(url)
+            raise err  # re-raise the error for backoff
 
         xpaths = {
             "title": "//div//h1[contains(@class, 'main-title-listing')]/text()",
@@ -139,9 +141,4 @@ class VehicleScraper(SeleniumScraper):
                 specs[spec.strip()] = value
 
         params["specs"] = specs
-
-        try:
-            return Vehicle(**params)
-        except Exception as err:
-            print(f"Error parsing vehicle info from {url}: {err}")
-            return None
+        return Vehicle(**params)
