@@ -9,30 +9,45 @@ from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.listings import ScrapeListingsStep
 from src.scrapers.listings import ListingsScraper
 
+
 def process_batch(context: StepContext) -> None:
     """Process a single batch with proper error handling."""
     step = ScrapeListingsStep()
     return step.execute(context)
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Scrapes car listings from olx.ba for given brands and models.',
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        description="Scrapes car listings from olx.ba for given brands and models.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('--run-id', type=str, required=True,
-                       help='Process run identifier.')
-    parser.add_argument('--config', type=str, default='configs/local.yml',
-                       help='Path to the YAML configuration file to load.')
-    parser.add_argument('--max-pages', type=int, default=5,
-                       help='Maximum number of pages to scrape per brand/model combination.')
-    parser.add_argument('--max-workers', type=int, default=multiprocessing.cpu_count(),
-                       help='Maximum number of parallel workers')
+    parser.add_argument(
+        "--run-id", type=str, required=True, help="Process run identifier."
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="configs/local.yml",
+        help="Path to the YAML configuration file to load.",
+    )
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=5,
+        help="Maximum number of pages to scrape per brand/model combination.",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=multiprocessing.cpu_count(),
+        help="Maximum number of parallel workers",
+    )
     args = parser.parse_args()
 
     # Initialize services
     config_manager = ConfigManager(Config.load(args.config))
     file_service = LocalFileService()
-    
+
     # Get input batches
     input_dir = Path(config_manager.brands_and_models_path) / args.run_id
     batch_files = file_service.list_files(input_dir, pattern="*.parquet")
@@ -41,7 +56,7 @@ def main():
 
     # Handle run id
     run_id = args.run_id or str(uuid.uuid4())
-    
+
     # Setup parallel processing
     with multiprocessing.Pool(args.max_workers) as pool:
         jobs = []
@@ -52,13 +67,10 @@ def main():
                 config_manager=config_manager,
                 file_service=file_service,
                 scraper_class=ListingsScraper,
-                params={
-                    "batch_id": batch_file.stem,
-                    "max_pages": args.max_pages
-                }
+                params={"batch_id": batch_file.stem, "max_pages": args.max_pages},
             )
             jobs.append(pool.apply_async(process_batch, (context,)))
-        
+
         # Process results and collect statistics
         total_inputs = 0
         total_outputs = 0
@@ -78,5 +90,6 @@ def main():
         print(f"Number of batches: {len(batch_files)}")
         print(f"Output directory: {config_manager.listings_path}/{run_id}")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

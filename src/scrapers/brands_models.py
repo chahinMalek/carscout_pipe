@@ -20,7 +20,7 @@ class BrandsAndModelsScraper(BaseScraper):
         print("Collecting brands data ...")
         response = requests.get(
             f"{self.config_manager.base_url}/categories/{self.config_manager.config.api['category_id']}/brands",
-            headers=self.config_manager.config.api['headers']
+            headers=self.config_manager.config.api["headers"],
         )
         response.raise_for_status()
         response = response.json()
@@ -35,7 +35,7 @@ class BrandsAndModelsScraper(BaseScraper):
         for bd in brands_data:
             response = requests.get(
                 f"{self.config_manager.base_url}/categories/{self.config_manager.config.api['category_id']}/brands/{bd['id']}/models",
-                headers=self.config_manager.config.api['headers']
+                headers=self.config_manager.config.api["headers"],
             )
             response.raise_for_status()
             response = response.json()
@@ -46,15 +46,17 @@ class BrandsAndModelsScraper(BaseScraper):
                     expanded_models_data.extend(md["models"])
                 else:
                     expanded_models_data.append(md)
-            
+
             for md in expanded_models_data:
-                brands_and_models_data.append({
-                    "brand_id": bd["id"],
-                    "brand_name": bd["name"],
-                    "brand_slug": bd["slug"],
-                    "model_id": md["id"],
-                    "model_name": md["name"],
-                    "model_slug": md["slug"],
-                })
+                brands_and_models_data.append(
+                    {
+                        "brand_id": bd["id"],
+                        "brand_name": bd["name"],
+                        "brand_slug": bd["slug"],
+                        "model_id": md["id"],
+                        "model_name": md["name"],
+                        "model_slug": md["slug"],
+                    }
+                )
         print(f"Found {len(brands_and_models_data)} models.")
         return brands_and_models_data

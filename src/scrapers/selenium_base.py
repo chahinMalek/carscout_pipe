@@ -9,6 +9,7 @@ from src.io.file_service import LocalFileService
 
 class SeleniumScraper(BaseScraper):
     """Base class for scrapers that use Selenium"""
+
     def __init__(self, config_manager: ConfigManager, file_service: LocalFileService):
         super().__init__(config_manager, file_service)
         self.driver = self._init_driver()
@@ -23,5 +24,5 @@ class SeleniumScraper(BaseScraper):
     def cleanup(self):
         """Clean up Selenium resources"""
         super().cleanup()
-        if hasattr(self, 'driver'):
+        if hasattr(self, "driver"):
             self.driver.quit()

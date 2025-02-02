@@ -8,7 +8,7 @@ import shutil
 
 class FileService(ABC):
     """Abstract base class defining interface for file operations"""
-    
+
     @abstractmethod
     def make_directory(self, path: Union[str, Path], parents: bool = False) -> None:
         """Create a directory at the specified path"""
@@ -55,7 +55,9 @@ class FileService(ABC):
         pass
 
     @abstractmethod
-    def write_parquet_chunked(self, df: pd.DataFrame, path: Union[str, Path], chunk_size: int, **kwargs) -> None:
+    def write_parquet_chunked(
+        self, df: pd.DataFrame, path: Union[str, Path], chunk_size: int, **kwargs
+    ) -> None:
         """Write pandas DataFrame to Parquet file in chunks"""
         pass
 
@@ -105,7 +107,9 @@ class LocalFileService(FileService):
     def write_parquet(self, df: pd.DataFrame, path: Union[str, Path], **kwargs) -> None:
         df.to_parquet(path, **kwargs)
 
-    def write_parquet_chunked(self, df: pd.DataFrame, path: Union[str, Path], chunk_size: int, **kwargs) -> None:
+    def write_parquet_chunked(
+        self, df: pd.DataFrame, path: Union[str, Path], chunk_size: int, **kwargs
+    ) -> None:
         """Write pandas DataFrame to Parquet file in chunks"""
         num_chunks = (len(df) + chunk_size - 1) // chunk_size
         for i in range(num_chunks):
@@ -116,7 +120,7 @@ class LocalFileService(FileService):
             self.write_parquet(chunk, chunk_path, **kwargs)
 
     def read_lines(self, path: Union[str, Path]) -> List[str]:
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             return [line.strip() for line in f if line.strip()]
 
     def read_file(self, path: Union[str, Path], **kwargs) -> Any:
@@ -124,9 +128,9 @@ class LocalFileService(FileService):
         path = Path(path)
         extension = path.suffix.lower()
 
-        if extension == '.csv':
+        if extension == ".csv":
             return self.read_csv(path, **kwargs)
-        elif extension in ['.parquet', '.pq']:
+        elif extension in [".parquet", ".pq"]:
             return self.read_parquet(path, **kwargs)
         else:
             raise ValueError(f"Unsupported file extension: {extension}")

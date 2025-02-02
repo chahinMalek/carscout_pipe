@@ -12,13 +12,18 @@ from src.data_models.listing import VehicleListing
 
 
 class ListingsScraper(SeleniumScraper):
-    def __init__(self, config_manager: ConfigManager, file_service: LocalFileService, max_pages: int = 5):
+    def __init__(
+        self,
+        config_manager: ConfigManager,
+        file_service: LocalFileService,
+        max_pages: int = 5,
+    ):
         super().__init__(config_manager, file_service)
         self._search_params = {
             "attr": "",
             "attr_encoded": "1",
             "category_id": config_manager.config.api["category_id"],
-            "created_gte": "-1+month"
+            "created_gte": "-1+month",
         }
         self._max_pages = max_pages
         self._patience = 3
@@ -47,9 +52,11 @@ class ListingsScraper(SeleniumScraper):
                 "brand": brand_id,
                 "models": model_id,
                 "brands": brand_id,
-                "page": page
+                "page": page,
             }
-            url = "https://olx.ba/pretraga?" + "&".join([f"{k}={v}" for k, v in params.items()])
+            url = "https://olx.ba/pretraga?" + "&".join(
+                [f"{k}={v}" for k, v in params.items()]
+            )
             print(f"INFO - Scraping: {url} ...")
             page_listings = self._scrape_listings_page(url)
             listings.extend(page_listings)
@@ -68,7 +75,9 @@ class ListingsScraper(SeleniumScraper):
             self.driver.get(url)
             time.sleep(1)
             selector = Selector(text=self.driver.page_source)
-            listings = selector.xpath("//div[contains(@class, 'articles')]//div[contains(@class, 'cardd')]").getall()
+            listings = selector.xpath(
+                "//div[contains(@class, 'articles')]//div[contains(@class, 'cardd')]"
+            ).getall()
 
         except Exception as err:
             print(f"Error retrieving listings page {url}: {err}")
@@ -77,9 +86,9 @@ class ListingsScraper(SeleniumScraper):
         xpaths = {
             "title": "//div[contains(@class, 'listing-card')]//h1[contains(@class, 'main-heading')]//text()",
             "price": "//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]//text()",
-            "article_id": "//a[starts-with(@href, '/artikal')]//@href"
+            "article_id": "//a[starts-with(@href, '/artikal')]//@href",
         }
-        
+
         response = []
         for listing in listings:
             listing_data = {}
@@ -88,10 +97,12 @@ class ListingsScraper(SeleniumScraper):
                 if value is not None:
                     value = value.strip()
                 listing_data[attr] = value
-            
+
             if listing_data["article_id"]:
                 listing_data["article_id"] = listing_data["article_id"].split("/")[-1]
-                listing_data["url"] = f"https://olx.ba/artikal/{listing_data['article_id']}"
+                listing_data["url"] = (
+                    f"https://olx.ba/artikal/{listing_data['article_id']}"
+                )
                 response.append(VehicleListing(**listing_data))
-                
+
         return response

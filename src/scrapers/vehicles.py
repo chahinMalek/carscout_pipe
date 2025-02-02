@@ -14,6 +14,7 @@ from src.config import ConfigManager
 from src.io.file_service import LocalFileService
 from src.data_models.vehicle import Vehicle
 from src.scrapers.selenium_base import SeleniumScraper
+from selenium.common.exceptions import TimeoutException
 
 
 class VehicleScraper(SeleniumScraper):
@@ -30,7 +31,9 @@ class VehicleScraper(SeleniumScraper):
                 vehicle = self._parse_vehicle_info(url)
                 if vehicle:
                     vehicle_dict = vehicle.model_dump()
-                    vehicle_dict["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    vehicle_dict["scraped_at"] = datetime.now().strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
                     vehicles.append(vehicle_dict)
             except Exception as err:
                 print(f"Error scraping vehicle info from {url}: {err}")
@@ -38,18 +41,35 @@ class VehicleScraper(SeleniumScraper):
         self.cleanup()
         return vehicles
 
-    @on_exception(expo, RequestException, max_tries=3, max_time=60)
+    @on_exception(
+        expo,
+        RequestException,
+        max_tries=3,
+        max_time=60,
+        giveup=lambda e: isinstance(e, TimeoutException),
+    )
     def _parse_vehicle_info(self, url: str) -> Vehicle | None:
         """Parse vehicle info from a given URL"""
+
         try:
             self.driver.get(url)
             time.sleep(2)
             WebDriverWait(self.driver, 5).until(
-                EC.presence_of_element_located((By.XPATH, "//div//h1[contains(@class, 'main-title-listing')]"))
+                EC.presence_of_element_located(
+                    (By.XPATH, "//div//h1[contains(@class, 'main-title-listing')]")
+                )
             )
             selector = Selector(text=self.driver.page_source)
+
+        except TimeoutException:
+            if "Oprostite, ne možemo pronaći ovu stranicu" in self.driver.page_source:
+                print(f"Error retrieving vehicle info from {url}: 404.")
+            else:
+                print(f"Error retrieving vehicle info from {url}: Timed out.")
+            return None
+
         except Exception as err:
-            print(f"Error retrieving vehicle info from {url}: {err}")
+            print(f"Unexpected error retrieving vehicle info from {url}: {err}")
             return None
 
         xpaths = {
@@ -78,25 +98,39 @@ class VehicleScraper(SeleniumScraper):
             params[attribute] = value if value else None
 
         if params["article_id"]:
-            params["article_id"] = params["article_id"].replace("\n", " ").split(": ")[-1].strip()
+            params["article_id"] = (
+                params["article_id"].replace("\n", " ").split(": ")[-1].strip()
+            )
 
         if params["price"]:
             if params["price"].lower().strip() == "na upit":
                 params["price"] = None
             else:
-                price_str = params["price"].split(" ")[0].replace(".", "").replace("KM", "")
+                price_str = (
+                    params["price"].split(" ")[0].replace(".", "").replace("KM", "")
+                )
                 params["price"] = float(price_str.replace(",", "."))
 
         if params["mileage"]:
-            params["mileage"] = int(params["mileage"].split(" ")[0].replace(".", "").replace("km", ""))
+            params["mileage"] = int(
+                params["mileage"].split(" ")[0].replace(".", "").replace("km", "")
+            )
 
         if params["build_year"]:
             params["build_year"] = int(params["build_year"])
 
         specs = {}
         specs_rows_list = []
-        specs_rows_list.extend(selector.xpath("//div/h2[normalize-space(text())='Specifikacije']/following-sibling::table[1]//tr").getall())
-        specs_rows_list.extend(selector.xpath("//div/h2[normalize-space(text())='Oprema']/following-sibling::table[1]//tr").getall())
+        specs_rows_list.extend(
+            selector.xpath(
+                "//div/h2[normalize-space(text())='Specifikacije']/following-sibling::table[1]//tr"
+            ).getall()
+        )
+        specs_rows_list.extend(
+            selector.xpath(
+                "//div/h2[normalize-space(text())='Oprema']/following-sibling::table[1]//tr"
+            ).getall()
+        )
         for spec_row in specs_rows_list:
             values = Selector(text=spec_row).xpath("//td//text()").getall()
             if values:
