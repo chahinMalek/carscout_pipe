@@ -1,7 +1,7 @@
 
-class VehiclePageNotFound(Exception):
+class OlxPageNotFound(Exception):
     """Exception raised for vehicle page not found."""
 
     def __init__(self, url: str):
-        self.message = f"Vehicle page not found: {url}"
+        self.message = f"Olx page not found: {url}"
         super().__init__(self.message)

@@ -16,7 +16,7 @@ from src.config import ConfigManager
 from src.io.file_service import LocalFileService
 from src.data_models.vehicle import Vehicle
 from src.scrapers.selenium_base import SeleniumScraper
-from src.exceptions import VehiclePageNotFound
+from src.exceptions import OlxPageNotFound
 
 
 class VehicleScraper(SeleniumScraper):
@@ -26,35 +26,42 @@ class VehicleScraper(SeleniumScraper):
     def scrape(self, listings: List[Dict]) -> List[Dict]:
         """Scrape vehicle details from a list of listings"""
         vehicles = []
-
         for listing in tqdm(listings, desc="Scraping vehicles"):
-            try:
-                url = listing["url"]
-                vehicle = self._parse_vehicle_info(url)
-                if vehicle:
-                    vehicle_dict = vehicle.model_dump()
-                    vehicle_dict["scraped_at"] = datetime.now().strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-                    vehicles.append(vehicle_dict)
-            except TimeoutException:
-                print(f"Error retrieving vehicle info from {url}: Timed out.")
-            except VehiclePageNotFound as err:
-                print(f"Error retrieving vehicle info from {url}: {err}")
-            except ValidationError as err:
-                print(f"Error parsing vehicle info from {url}: {err}")
-            except Exception as err:
-                print(f"Unexpected error scraping vehicle info from {url}: {err}")
-
-        self.cleanup()
+            vehicle = self._scrape_one(listing["url"])
+            if vehicle:
+                vehicle_dict = vehicle.model_dump()
+                vehicle_dict["scraped_at"] = datetime.now().strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+                vehicles.append(vehicle_dict)
         return vehicles
+
+    def _scrape_one(self, url: str) -> Vehicle | None:
+        """Scrape vehicle details from a given URL"""
+        response = None
+        try:
+            if not self.initialized:
+                self.driver = self.init_driver()
+            response = self._parse_vehicle_info(url)
+            return response
+        except TimeoutException:
+            print(f"Error retrieving vehicle info from {url}: Timed out.")
+        except OlxPageNotFound as err:
+            print(err)
+        except ValidationError as err:
+            print(f"Error parsing vehicle info from {url}: {err}")
+        except Exception as err:
+            print(f"Unexpected error scraping vehicle info from {url}: {err}")
+        finally:
+            self.cleanup()
+        return response
 
     @on_exception(
         expo,
         RequestException,
         max_tries=3,
         max_time=60,
-        giveup=lambda e: isinstance(e, VehiclePageNotFound),
+        giveup=lambda e: isinstance(e, OlxPageNotFound),
     )
     def _parse_vehicle_info(self, url: str) -> Vehicle | None:
         """Parse vehicle info from a given URL"""
@@ -71,8 +78,8 @@ class VehicleScraper(SeleniumScraper):
 
         except TimeoutException as err:
             if "Oprostite, ne možemo pronaći ovu stranicu" in self.driver.page_source:
-                raise VehiclePageNotFound(url)
-            raise err  # re-raise the error for backoff
+                raise OlxPageNotFound(url) # raise different error to prevent backoff
+            raise err  # re-raise the error to continue backoff
 
         xpaths = {
             "title": "//div//h1[contains(@class, 'main-title-listing')]/text()",

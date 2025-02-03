@@ -12,9 +12,13 @@ class SeleniumScraper(BaseScraper):
 
     def __init__(self, config_manager: ConfigManager, file_service: LocalFileService):
         super().__init__(config_manager, file_service)
-        self.driver = self._init_driver()
+        self.driver = None
 
-    def _init_driver(self) -> WebDriver:
+    @property
+    def initialized(self) -> bool:
+        return self.driver is not None
+
+    def init_driver(self) -> WebDriver:
         """Initialize Chrome WebDriver with given options"""
         chrome_options = Options()
         for option in self.config_manager.chrome_options:
@@ -26,3 +30,4 @@ class SeleniumScraper(BaseScraper):
         super().cleanup()
         if hasattr(self, "driver"):
             self.driver.quit()
+            self.driver = None

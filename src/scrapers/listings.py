@@ -4,11 +4,13 @@ from scrapy import Selector
 import time
 from requests.exceptions import RequestException
 from backoff import on_exception, expo
+from selenium.common.exceptions import TimeoutException
 
 from src.config import ConfigManager
 from src.io.file_service import LocalFileService
 from src.scrapers.selenium_base import SeleniumScraper
 from src.data_models.listing import VehicleListing
+from src.exceptions import OlxPageNotFound
 
 
 class ListingsScraper(SeleniumScraper):
@@ -33,43 +35,49 @@ class ListingsScraper(SeleniumScraper):
         all_listings: List[Dict] = []
 
         for row in tqdm(input_data, total=len(input_data)):
-            try:
-                brand_id = row["brand_id"]
-                model_id = row["model_id"]
-                all_listings.extend(self._scrape_listings(brand_id, model_id))
-            except Exception as err:
-                print(f"Error scraping listings for {brand_id} {model_id}: {err}")
+            patience = self._patience
+            for page in range(1, self._max_pages + 1):
+                params = self._search_params | {
+                    "brand": row["brand_id"],
+                    "models": row["model_id"],
+                    "brands": row["brand_id"],
+                    "page": page,
+                }
+                url = "https://olx.ba/pretraga?" + "&".join(
+                    [f"{k}={v}" for k, v in params.items()]
+                )
+                print(f"INFO - Scraping: {url} with patience={patience}...")
+                page_response = self._scrape_one(url)
+                if not page_response or len(page_response) == 0:
+                    patience -= 1
+                    if patience <= 0:
+                        break
+                else:
+                    all_listings.extend(page_response)
+                    patience = self._patience
 
-        self.cleanup()
         return [listing.model_dump() for listing in all_listings]
 
-    def _scrape_listings(self, brand_id: str, model_id: str) -> List[Dict]:
-        """Scrape listings for a specific brand and model combination"""
-        listings = []
-        patience = self._patience
-        for page in range(1, self._max_pages + 1):
-            params = self._search_params | {
-                "brand": brand_id,
-                "models": model_id,
-                "brands": brand_id,
-                "page": page,
-            }
-            url = "https://olx.ba/pretraga?" + "&".join(
-                [f"{k}={v}" for k, v in params.items()]
-            )
-            print(f"INFO - Scraping: {url} ...")
-            page_listings = self._scrape_listings_page(url)
-            listings.extend(page_listings)
-            if len(page_listings) == 0:
-                patience -= 1
-                if patience <= 0:
-                    break
-            else:
-                patience = self._patience
-        return listings
+    def _scrape_one(self, url: str) -> List[VehicleListing]:
+        """Scrape listings for a specific URL"""
+        response = []
+        try:
+            if not self.initialized:
+                self.driver = self.init_driver()
+            response = self._parse_listings_page(url)
+            return response
+        except TimeoutException:
+            print(f"Error retrieving listings page {url}: Timed out.")
+        except OlxPageNotFound as err:
+            print(err)
+        except Exception as err:
+            print(f"Unexpected error scraping listings page {url}: {err}")
+        finally:
+            self.cleanup()
+        return response
 
     @on_exception(expo, RequestException, max_tries=3, max_time=60)
-    def _scrape_listings_page(self, url: str) -> List[VehicleListing]:
+    def _parse_listings_page(self, url: str) -> List[VehicleListing]:
         """Parse vehicle listings from a given URL"""
         try:
             self.driver.get(url)
@@ -79,9 +87,10 @@ class ListingsScraper(SeleniumScraper):
                 "//div[contains(@class, 'articles')]//div[contains(@class, 'cardd')]"
             ).getall()
 
-        except Exception as err:
-            print(f"Error retrieving listings page {url}: {err}")
-            return []
+        except TimeoutException as err:
+            if "Oprostite, ne možemo pronaći ovu stranicu" in self.driver.page_source:
+                raise OlxPageNotFound(url) # raise different error to prevent backoff
+            raise err  # re-raise the error to continue backoff
 
         xpaths = {
             "title": "//div[contains(@class, 'listing-card')]//h1[contains(@class, 'main-heading')]//text()",
