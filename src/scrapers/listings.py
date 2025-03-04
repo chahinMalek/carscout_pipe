@@ -1,16 +1,19 @@
-from typing import List, Dict
-from tqdm import tqdm
-from scrapy import Selector
+import os
 import time
-from requests.exceptions import RequestException
+from typing import List, Dict
+
 from backoff import on_exception, expo
+from requests.exceptions import RequestException
+from scrapy import Selector
 from selenium.common.exceptions import TimeoutException
+from tqdm import tqdm
 
 from src.config import ConfigManager
-from src.io.file_service import LocalFileService
-from src.scrapers.selenium_base import SeleniumScraper
 from src.data_models.listing import VehicleListing
 from src.exceptions import OlxPageNotFound
+from src.io.file_service import LocalFileService
+from src.scrapers.selenium_base import SeleniumScraper
+from src.utils.logging import get_logger
 
 
 class ListingsScraper(SeleniumScraper):
@@ -19,6 +22,8 @@ class ListingsScraper(SeleniumScraper):
         config_manager: ConfigManager,
         file_service: LocalFileService,
         max_pages: int = 5,
+        log_level: str = "INFO",
+        process_id: str | None = None,
     ):
         super().__init__(config_manager, file_service)
         self._search_params = {
@@ -29,12 +34,14 @@ class ListingsScraper(SeleniumScraper):
         }
         self._max_pages = max_pages
         self._patience = 3
+        self._process_id = process_id
+        self._logger = get_logger(__name__, log_level)
 
     def scrape(self, input_data: List[Dict]) -> List[Dict]:
         """Scrape listings for given brands and models data"""
         all_listings: List[Dict] = []
-
-        for row in tqdm(input_data, total=len(input_data)):
+        pbar = tqdm(input_data, desc=f"Processing listings (id={self._process_id})", file=open(os.devnull, 'w'))
+        for row in pbar:
             patience = self._patience
             for page in range(1, self._max_pages + 1):
                 params = self._search_params | {
@@ -46,7 +53,7 @@ class ListingsScraper(SeleniumScraper):
                 url = "https://olx.ba/pretraga?" + "&".join(
                     [f"{k}={v}" for k, v in params.items()]
                 )
-                print(f"INFO - Scraping: {url} with patience={patience}...")
+                self._logger.debug(f"Scraping {url} with patience={patience}...")
                 page_response = self._scrape_one(url)
                 if not page_response or len(page_response) == 0:
                     patience -= 1
@@ -55,6 +62,7 @@ class ListingsScraper(SeleniumScraper):
                 else:
                     all_listings.extend(page_response)
                     patience = self._patience
+            self._logger.info(str(pbar))
 
         return [listing.model_dump() for listing in all_listings]
 
@@ -67,11 +75,11 @@ class ListingsScraper(SeleniumScraper):
             response = self._parse_listings_page(url)
             return response
         except TimeoutException:
-            print(f"Error retrieving listings page {url}: Timed out.")
+            self._logger.error(f"Error retrieving listings page {url}: Timed out.")
         except OlxPageNotFound as err:
-            print(err)
+            self._logger.error(err)
         except Exception as err:
-            print(f"Unexpected error scraping listings page {url}: {err}")
+            self._logger.error(f"Unexpected error scraping listings page {url}: {err}")
         finally:
             self.cleanup()
         return response
@@ -88,7 +96,8 @@ class ListingsScraper(SeleniumScraper):
             ).getall()
 
         except TimeoutException as err:
-            if "Oprostite, ne možemo pronaći ovu stranicu" in self.driver.page_source:
+            patterns_404 = ["Oprostite, ne možemo pronaći ovu stranicu", "Nema rezultata za traženi pojam"]
+            if any(p in self.driver.page_source for p in patterns_404):
                 raise OlxPageNotFound(url) # raise different error to prevent backoff
             raise err  # re-raise the error to continue backoff
 
@@ -97,21 +106,21 @@ class ListingsScraper(SeleniumScraper):
             "price": "//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]//text()",
             "article_id": "//a[starts-with(@href, '/artikal')]//@href",
         }
-
+        
         response = []
         for listing in listings:
             listing_data = {}
             for attr, xpath in xpaths.items():
                 value = Selector(text=listing).xpath(xpath).get()
-                if value is not None:
-                    value = value.strip()
-                listing_data[attr] = value
-
-            if listing_data["article_id"]:
-                listing_data["article_id"] = listing_data["article_id"].split("/")[-1]
-                listing_data["url"] = (
-                    f"https://olx.ba/artikal/{listing_data['article_id']}"
-                )
-                response.append(VehicleListing(**listing_data))
-
+                listing_data[attr] = value.strip() if value else None
+        
+            if listing_data.get("article_id"):
+                article_id = listing_data["article_id"].split("/")[-1]
+                listing_data["article_id"] = article_id
+                listing_data["url"] = f"https://olx.ba/artikal/{article_id}"
+                try:
+                    response.append(VehicleListing(**listing_data))
+                except Exception as e:
+                    self._logger.error(f"Error creating VehicleListing object: {e}")
+        
         return response

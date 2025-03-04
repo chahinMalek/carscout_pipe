@@ -1,6 +1,6 @@
 import argparse
-import uuid
 import multiprocessing
+import uuid
 from pathlib import Path
 
 from src.config import Config, ConfigManager
@@ -8,6 +8,7 @@ from src.io.file_service import LocalFileService
 from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.listings import ScrapeListingsStep
 from src.scrapers.listings import ListingsScraper
+from src.utils.logging import get_logger
 
 
 def process_batch(context: StepContext) -> None:
@@ -17,6 +18,7 @@ def process_batch(context: StepContext) -> None:
 
 
 def main():
+
     parser = argparse.ArgumentParser(
         description="Scrapes car listings from olx.ba for given brands and models.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -42,7 +44,16 @@ def main():
         default=multiprocessing.cpu_count(),
         help="Maximum number of parallel workers",
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
     args = parser.parse_args()
+
+    logger = get_logger(__name__, args.log_level)
+    logger.debug("Starting scraping...")
 
     # Initialize services
     config_manager = ConfigManager(Config.load(args.config))
@@ -68,6 +79,7 @@ def main():
                 file_service=file_service,
                 scraper_class=ListingsScraper,
                 params={"batch_id": batch_file.stem, "max_pages": args.max_pages},
+                log_level=args.log_level,
             )
             jobs.append(pool.apply_async(process_batch, (context,)))
 
@@ -80,15 +92,15 @@ def main():
                 total_inputs += output.num_inputs
                 total_outputs += output.num_outputs
             except Exception as e:
-                print(f"Batch processing error: {e}")
+                logger.error(f"Batch processing error: {e}")
 
         # Print summary
-        print("\nProcessing completed!")
-        print(f"Run ID: {run_id}")
-        print(f"Number of inputs: {total_inputs}")
-        print(f"Successfully scraped {total_outputs} listings")
-        print(f"Number of batches: {len(batch_files)}")
-        print(f"Output directory: {config_manager.listings_path}/{run_id}")
+        logger.info("\nProcessing completed!")
+        logger.info(f"Run ID: {run_id}")
+        logger.info(f"Number of inputs: {total_inputs}")
+        logger.info(f"Successfully scraped {total_outputs} listings")
+        logger.info(f"Number of batches: {len(batch_files)}")
+        logger.info(f"Output directory: {config_manager.listings_path}/{run_id}")
 
 
 if __name__ == "__main__":
