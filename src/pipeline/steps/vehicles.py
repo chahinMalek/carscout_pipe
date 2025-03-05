@@ -8,8 +8,11 @@ from src.pipeline.output import PipelineOutput
 class ScrapeVehiclesStep(PipelineStep):
     def execute(self, context: StepContext) -> PipelineOutput:
         """Execute the vehicles scraping step for a single batch."""
-        # Setup paths
+        # Extract parameters
         batch_id = context.params["batch_id"]
+        log_level = context.params.get("log_level", "INFO")
+
+        # Setup paths
         input_path = (
             Path(context.config_manager.listings_path)
             / context.run_id
@@ -26,7 +29,8 @@ class ScrapeVehiclesStep(PipelineStep):
         context.file_service.make_directory(output_dir, parents=True)
 
         # Initialize scraper
-        scraper = context.scraper_class(context.config_manager, context.file_service)
+        kwargs = {"log_level": log_level, "process_id": batch_id}
+        scraper = context.scraper_class(context.config_manager, context.file_service, **kwargs)
 
         # Read and prepare input batch
         listings = context.file_service.read_parquet(input_path)

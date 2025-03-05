@@ -17,13 +17,15 @@ class ScrapeBrandsAndModelsStep(PipelineStep):
         # Extract parameters
         brands_path = Path(context.params["brands_file"])
         chunk_size = context.params.get("chunk_size", 10)
+        log_level = context.params.get("log_level", "INFO")
 
         # Validate inputs
         if not context.file_service.file_exists(brands_path):
             raise ValueError(f"Brands file not found at {brands_path}")
 
         # Initialize scraper
-        scraper = context.scraper_class(context.config_manager, context.file_service)
+        kwargs = {"log_level": log_level}
+        scraper = context.scraper_class(context.config_manager, context.file_service, **kwargs)
 
         # Setup output directory
         output_dir = (

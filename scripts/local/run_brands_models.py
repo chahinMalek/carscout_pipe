@@ -6,6 +6,7 @@ from src.io.file_service import LocalFileService
 from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.brands_models import ScrapeBrandsAndModelsStep
 from src.scrapers.brands_models import BrandsAndModelsScraper
+from src.utils.logging import get_logger
 
 
 def main():
@@ -36,7 +37,14 @@ def main():
         default=10,
         help="Number of items to store in each output chunk.",
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
     args = parser.parse_args()
+    logger = get_logger(__name__, args.log_level)
 
     # Initialize services
     config_manager = ConfigManager(Config.load(args.config))
@@ -48,18 +56,18 @@ def main():
         config_manager=config_manager,
         file_service=file_service,
         scraper_class=BrandsAndModelsScraper,
-        params={"brands_file": args.brands, "chunk_size": args.chunk_size},
+        params={"brands_file": args.brands, "chunk_size": args.chunk_size, "log_level": args.log_level},
     )
 
     # Execute step
     step = ScrapeBrandsAndModelsStep()
     output = step.execute(context)
 
-    print("\nStep completed successfully!")
-    print(f"Run ID: {context.run_id}")
-    print(f"Number of inputs: {output.num_inputs}")
-    print(f"Collected {output.num_outputs} records")
-    print(f"Output directory: {output.output_dir}")
+    logger.info("\nStep completed successfully!")
+    logger.info(f"Run ID: {context.run_id}")
+    logger.info(f"Number of inputs: {output.num_inputs}")
+    logger.info(f"Collected {output.num_outputs} records")
+    logger.info(f"Output directory: {output.output_dir}")
 
 
 if __name__ == "__main__":

@@ -51,9 +51,7 @@ def main():
         help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     )
     args = parser.parse_args()
-
     logger = get_logger(__name__, args.log_level)
-    logger.debug("Starting scraping...")
 
     # Initialize services
     config_manager = ConfigManager(Config.load(args.config))
@@ -78,8 +76,7 @@ def main():
                 config_manager=config_manager,
                 file_service=file_service,
                 scraper_class=ListingsScraper,
-                params={"batch_id": batch_file.stem, "max_pages": args.max_pages},
-                log_level=args.log_level,
+                params={"batch_id": batch_file.stem, "max_pages": args.max_pages, "log_level": args.log_level},
             )
             jobs.append(pool.apply_async(process_batch, (context,)))
 

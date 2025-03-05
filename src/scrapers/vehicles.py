@@ -1,3 +1,4 @@
+import os
 import time
 from typing import List, Dict
 
@@ -17,23 +18,32 @@ from src.io.file_service import LocalFileService
 from src.data_models.vehicle import Vehicle
 from src.scrapers.selenium_base import SeleniumScraper
 from src.exceptions import OlxPageNotFound
+from src.utils.logging import get_logger
 
 
 class VehicleScraper(SeleniumScraper):
-    def __init__(self, config_manager: ConfigManager, file_service: LocalFileService):
+    def __init__(
+            self,
+            config_manager: ConfigManager,
+            file_service: LocalFileService,
+            log_level: str = "INFO",
+            process_id: str | None = None,
+    ):
         super().__init__(config_manager, file_service)
+        self._process_id = process_id
+        self._logger = get_logger(__name__, log_level)
 
     def scrape(self, listings: List[Dict]) -> List[Dict]:
         """Scrape vehicle details from a list of listings"""
         vehicles = []
-        for listing in tqdm(listings, desc="Scraping vehicles"):
+        pbar = tqdm(listings, desc=f"Scraping vehicles (id={self._process_id})", file=open(os.devnull, 'w'))
+        for listing in pbar:
             vehicle = self._scrape_one(listing["url"])
             if vehicle:
                 vehicle_dict = vehicle.model_dump()
-                vehicle_dict["scraped_at"] = datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                vehicle_dict["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 vehicles.append(vehicle_dict)
+            self._logger.info(str(pbar))
         return vehicles
 
     def _scrape_one(self, url: str) -> Vehicle | None:
@@ -45,13 +55,13 @@ class VehicleScraper(SeleniumScraper):
             response = self._parse_vehicle_info(url)
             return response
         except TimeoutException:
-            print(f"Error retrieving vehicle info from {url}: Timed out.")
+            self._logger.error(f"Error retrieving vehicle info from {url}: Timed out.")
         except OlxPageNotFound as err:
-            print(err)
+            self._logger.error(err)
         except ValidationError as err:
-            print(f"Error parsing vehicle info from {url}: {err}")
+            self._logger.error(f"Error parsing vehicle info from {url}: {err}")
         except Exception as err:
-            print(f"Unexpected error scraping vehicle info from {url}: {err}")
+            self._logger.error(f"Unexpected error scraping vehicle info from {url}: {err}")
         finally:
             self.cleanup()
         return response

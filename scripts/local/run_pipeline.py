@@ -1,18 +1,20 @@
 import argparse
 import multiprocessing
+import sys
 import uuid
 from pathlib import Path
-import sys
 from typing import List, Dict, Any
+
 from src.config import Config, ConfigManager
 from src.io.file_service import LocalFileService
+from src.pipeline.output import PipelineOutput
 from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.brands_models import ScrapeBrandsAndModelsStep
+from src.pipeline.steps.ingest_vehicles import IngestVehiclesStep
 from src.pipeline.steps.listings import ScrapeListingsStep
 from src.pipeline.steps.vehicles import ScrapeVehiclesStep
-from src.pipeline.steps.ingest_vehicles import IngestVehiclesStep
-from src.pipeline.output import PipelineOutput
 from src.scrapers import BrandsAndModelsScraper, ListingsScraper, VehicleScraper
+from src.utils.logging import get_logger
 
 
 def run_parallel_step(
@@ -34,6 +36,7 @@ def run_parallel_step(
                 scraper_class=context_params.get("scraper_class"),
                 params={
                     "batch_id": batch_file.stem,
+                    "log_level": context_params["log_level"],
                     **context_params.get("step_params", {}),
                 },
             )
@@ -83,7 +86,14 @@ def main():
         default=10,
         help="Size of chunks for brands and models",
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
     args = parser.parse_args()
+    logger = get_logger(__name__, args.log_level)
 
     # Initialize services
     config_manager = ConfigManager(Config.load(args.config))
@@ -91,30 +101,31 @@ def main():
 
     # Generate run ID
     run_id = str(uuid.uuid4())
-    print(f"Starting pipeline with run_id: {run_id}")
+    logger.info(f"Starting pipeline with run_id: {run_id}")
     try:
         # Step 1: Scrape brands and models
-        print("\nExecuting Scraping brands and models step ...")
+        logger.info("\nExecuting Scraping brands and models step ...")
         brands_output = ScrapeBrandsAndModelsStep().execute(
             StepContext(
                 run_id=run_id,
                 config_manager=config_manager,
                 file_service=file_service,
                 scraper_class=BrandsAndModelsScraper,
-                params={"brands_file": args.brands_file, "chunk_size": args.chunk_size},
+                params={"brands_file": args.brands_file, "chunk_size": args.chunk_size, "log_level": args.log_level},
             )
         )
-        print("\n--------------------------------")
-        print("Scraping brands and models step completed:")
-        print(f"Processed {brands_output.num_inputs} brands")
-        print(f"Generated {brands_output.num_outputs} brand/model combinations")
-        print("--------------------------------")
+        logger.info("\n--------------------------------")
+        logger.info("Scraping brands and models step completed:")
+        logger.info(f"Processed {brands_output.num_inputs} brands")
+        logger.info(f"Generated {brands_output.num_outputs} brand/model combinations")
+        logger.info("--------------------------------")
 
         # Common context parameters for parallel steps
         context_params = {
             "run_id": run_id,
             "config_manager": config_manager,
             "file_service": file_service,
+            "log_level": args.log_level,
         }
 
         # Step 2: Scrape listings (parallel)
@@ -125,21 +136,21 @@ def main():
         context_params["step_params"] = {"max_pages": args.max_pages}
         context_params["scraper_class"] = ListingsScraper
 
-        print("\nExecuting Scraping listings step ...")
+        logger.info("\nExecuting Scraping listings step ...")
         listings_stats = run_parallel_step(
             ScrapeListingsStep,
             listings_batches,
             context_params,
             args.max_workers,
         )
-        print("\n--------------------------------")
-        print("Scraping listings step completed:")
-        print(f"Processed {listings_stats['processed']} listings")
-        print(f"Successfully processed {listings_stats['successful']} listings")
-        print("--------------------------------")
+        logger.info("\n--------------------------------")
+        logger.info("Scraping listings step completed:")
+        logger.info(f"Processed {listings_stats['processed']} listings")
+        logger.info(f"Successfully processed {listings_stats['successful']} listings")
+        logger.info("--------------------------------")
 
         # Step 3: Scrape vehicles (parallel)
-        print("\nExecuting Scraping vehicles step ...")
+        logger.info("\nExecuting Scraping vehicles step ...")
         vehicles_input_dir = Path(config_manager.listings_path) / run_id
         vehicles_batches = file_service.list_files(
             vehicles_input_dir, pattern="*.parquet"
@@ -153,14 +164,14 @@ def main():
             context_params,
             args.max_workers,
         )
-        print("\n--------------------------------")
-        print("Scraping vehicles step completed:")
-        print(f"Processed {vehicles_stats['processed']} vehicles")
-        print(f"Successfully processed {vehicles_stats['successful']} vehicles")
-        print("--------------------------------")
+        logger.info("\n--------------------------------")
+        logger.info("Scraping vehicles step completed:")
+        logger.info(f"Processed {vehicles_stats['processed']} vehicles")
+        logger.info(f"Successfully processed {vehicles_stats['successful']} vehicles")
+        logger.info("--------------------------------")
 
         # Step 4: Ingest vehicles
-        print("\nExecuting Vehicles ingestion step ...")
+        logger.info("\nExecuting Vehicles ingestion step ...")
         ingest_output = IngestVehiclesStep().execute(
             StepContext(
                 run_id=run_id,
@@ -169,35 +180,35 @@ def main():
                 params={},
             )
         )
-        print("\n--------------------------------")
-        print("Vehicles ingestion step completed:")
-        print(f"Processed {ingest_output.num_inputs} vehicles")
-        print(f"Successfully ingested {ingest_output.num_outputs} vehicles")
-        print("--------------------------------")
+        logger.info("\n--------------------------------")
+        logger.info("Vehicles ingestion step completed:")
+        logger.info(f"Processed {ingest_output.num_inputs} vehicles")
+        logger.info(f"Successfully ingested {ingest_output.num_outputs} vehicles")
+        logger.info("--------------------------------")
 
         # Print final summary
-        print("\n--------------------------------")
-        print("Pipeline completed successfully!")
-        print(f"Run ID: {run_id}")
-        print("\nFinal Statistics:")
-        print(f"Brands/Models: {brands_output.num_outputs} combinations generated")
-        print(f"Listings: {listings_stats['successful']} successfully scraped")
+        logger.info("\n--------------------------------")
+        logger.info("Pipeline completed successfully!")
+        logger.info(f"Run ID: {run_id}")
+        logger.info("\nFinal Statistics:")
+        logger.info(f"Brands/Models: {brands_output.num_outputs} combinations generated")
+        logger.info(f"Listings: {listings_stats['successful']} successfully scraped")
         scraped_vehicles_pct = (
             vehicles_stats["successful"] / vehicles_stats["processed"] * 100
         )
-        print(
+        logger.info(
             f"Vehicles: {vehicles_stats['successful']}/{vehicles_stats['processed']} successfully scraped ({scraped_vehicles_pct:.2f}%)"
         )
         ingested_vehicles_pct = (
             ingest_output.num_outputs / ingest_output.num_inputs * 100
         )
-        print(
+        logger.info(
             f"Database: {ingest_output.num_outputs}/{ingest_output.num_inputs} vehicles ingested ({ingested_vehicles_pct:.2f}%)"
         )
-        print("--------------------------------")
+        logger.info("--------------------------------")
 
     except Exception as e:
-        print(f"\nPipeline failed: {e}", file=sys.stderr)
+        logger.error(f"\nPipeline failed: {e}")
         sys.exit(1)
 
 

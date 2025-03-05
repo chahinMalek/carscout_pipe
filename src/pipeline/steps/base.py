@@ -16,7 +16,6 @@ class StepContext:
     file_service: FileService
     params: Dict[str, Any]
     scraper_class: Type["BaseScraper"] | None = None
-    log_level: str = "INFO"
 
 
 class PipelineStep:

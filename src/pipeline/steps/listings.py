@@ -11,6 +11,7 @@ class ScrapeListingsStep(PipelineStep):
         # Extract parameters
         batch_id = context.params["batch_id"]
         max_pages = context.params.get("max_pages", 5)
+        log_level = context.params.get("log_level", "INFO")
 
         # Setup paths
         input_path = (
@@ -29,7 +30,7 @@ class ScrapeListingsStep(PipelineStep):
         context.file_service.make_directory(output_dir, parents=True)
 
         # Initialize scraper
-        kwargs = {"max_pages": max_pages, "log_level": context.log_level, "process_id": batch_id}
+        kwargs = {"max_pages": max_pages, "log_level": log_level, "process_id": batch_id}
         scraper = context.scraper_class(
             context.config_manager, context.file_service, **kwargs
         )

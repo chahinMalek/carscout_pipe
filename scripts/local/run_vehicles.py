@@ -8,6 +8,7 @@ from src.io.file_service import LocalFileService
 from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.vehicles import ScrapeVehiclesStep
 from src.scrapers.vehicles import VehicleScraper
+from src.utils.logging import get_logger
 
 
 def process_batch(context: StepContext) -> None:
@@ -36,7 +37,14 @@ def main():
         default=multiprocessing.cpu_count(),
         help="Maximum number of parallel workers",
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
     args = parser.parse_args()
+    logger = get_logger(__name__, args.log_level)
 
     # Initialize services
     config_manager = ConfigManager(Config.load(args.config))
@@ -61,7 +69,7 @@ def main():
                 config_manager=config_manager,
                 file_service=file_service,
                 scraper_class=VehicleScraper,
-                params={"batch_id": batch_file.stem},
+                params={"batch_id": batch_file.stem, "log_level": args.log_level},
             )
             jobs.append(pool.apply_async(process_batch, (context,)))
 
@@ -75,16 +83,16 @@ def main():
                 total_inputs += output.num_inputs
                 total_outputs += output.num_outputs
             except Exception as e:
-                print(f"Batch processing error: {e}")
+                logger.error(f"Batch processing error: {e}")
 
         # Print summary
-        print("\nProcessing completed!")
-        print(f"Run ID: {run_id}")
-        print(f"Number of batches: {len(batch_files)}")
-        print(f"Number of input listings: {total_inputs}")
-        print(f"Successfully scraped {total_outputs} vehicles")
-        print(f"Success rate: {total_outputs / total_inputs * 100:.2f}%")
-        print(f"Output directory: {config_manager.vehicles_path}/{run_id}")
+        logger.info("\nProcessing completed!")
+        logger.info(f"Run ID: {run_id}")
+        logger.info(f"Number of batches: {len(batch_files)}")
+        logger.info(f"Number of input listings: {total_inputs}")
+        logger.info(f"Successfully scraped {total_outputs} vehicles")
+        logger.info(f"Success rate: {total_outputs / total_inputs * 100:.2f}%")
+        logger.info(f"Output directory: {config_manager.vehicles_path}/{run_id}")
 
 
 if __name__ == "__main__":

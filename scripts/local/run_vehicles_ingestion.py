@@ -4,6 +4,7 @@ from src.config import Config, ConfigManager
 from src.io.file_service import LocalFileService
 from src.pipeline.steps.base import StepContext
 from src.pipeline.steps.ingest_vehicles import IngestVehiclesStep
+from src.utils.logging import get_logger
 
 
 def main():
@@ -23,7 +24,14 @@ def main():
         default="configs/local.yml",
         help="Path to the YAML configuration file to load.",
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
     args = parser.parse_args()
+    logger = get_logger(__name__, args.log_level)
 
     # Initialize services
     config_manager = ConfigManager(Config.load(args.config))
@@ -41,11 +49,11 @@ def main():
     step = IngestVehiclesStep()
     output = step.execute(context)
 
-    print("\nStep completed successfully!")
-    print(f"Run ID: {context.run_id}")
-    print(f"Number of inputs: {output.num_inputs}")
-    print(f"Ingested {output.num_outputs} records")
-    print(f"Output directory: {output.output_dir}")
+    logger.info("\nStep completed successfully!")
+    logger.info(f"Run ID: {context.run_id}")
+    logger.info(f"Number of inputs: {output.num_inputs}")
+    logger.info(f"Ingested {output.num_outputs} records")
+    logger.info(f"Output directory: {output.output_dir}")
 
 
 if __name__ == "__main__":
