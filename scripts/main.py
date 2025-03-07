@@ -17,8 +17,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 from tqdm import tqdm
 
-from src.data_models.vehicle import Vehicle
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler(sys.stdout)
@@ -90,14 +88,86 @@ def parse_vehicle_info(selector: Selector) -> Dict:
         "num_doors": "//div//td[normalize-space(text())='Broj vrata']/following-sibling::td[1]//text()",
         "transmission": "//div//td[normalize-space(text())='Transmisija']/following-sibling::td[1]//text()",
         "image_url": "//div[@class='main-image-overlay-content']//div[@class='gallery-items']/img[1]/@src",
+        "horsepower": "//div//table//td[normalize-space(text())='Konjskih snaga']/following-sibling::td[1]//text()",
+        "weight_kg": "//div//table//td[normalize-space(text())='Masa/Težina (kg)']/following-sibling::td[1]//text()",
+        "vehicle_type": "//div//table//td[normalize-space(text())='Tip']/following-sibling::td[1]//text()",
+        "climate": "//div//table//td[normalize-space(text())='Klimatizacija']/following-sibling::td[1]//text()",
+        "audio": "//div//table//td[normalize-space(text())='Muzika/ozvučenje']/following-sibling::td[1]//text()",
+        "parking_sensors": "//div//table//td[normalize-space(text())='Parking senzori']/following-sibling::td[1]//text()",
+        "parking_camera": "//div//table//td[normalize-space(text())='Parking kamera']/following-sibling::td[1]//text()",
+        "drivetrain": "//div//table//td[normalize-space(text())='Pogon']/following-sibling::td[1]//text()",
+        "year_first_registered": "//div//table//td[normalize-space(text())='Godina prve registracije']/following-sibling::td[1]//text()",
+        "registered_until": "//div//table//td[normalize-space(text())='Registrovan do']/following-sibling::td[1]//text()",
+        "color": "//div//table//td[normalize-space(text())='Boja']/following-sibling::td[1]//text()",
+        "gears": "//div//table//td[normalize-space(text())='Broj stepeni prijenosa']/following-sibling::td[1]//text()",
+        "tyres": "//div//table//td[normalize-space(text())='Posjeduje gume']/following-sibling::td[1]//text()",
+        "emission": "//div//table//td[normalize-space(text())='Emisioni standard']/following-sibling::td[1]//text()",
+        "interior": "//div//table//td[normalize-space(text())='Vrsta enterijera']/following-sibling::td[1]//text()",
+        "curtains": "//div//table//td[normalize-space(text())='Rolo zavjese']/following-sibling::td[1]//text()",
+        "lights": "//div//table//td[normalize-space(text())='Svjetla']/following-sibling::td[1]//text()",
+        "number_of_seats": "//div//table//td[normalize-space(text())='Sjedećih mjesta']/following-sibling::td[1]//text()",
+        "rim_size": "//div//table//td[normalize-space(text())='Veličina felgi']/following-sibling::td[1]//text()",
+        "warranty": "//div//table//td[normalize-space(text())='Garancija']/following-sibling::td[1]//text()",
+        "security": "//div//table//td[normalize-space(text())='Zaštita/Blokada']/following-sibling::td[1]//text()",
+        "previous_owners": "//div//table//td[normalize-space(text())='Broj prethodnih vlasnika']/following-sibling::td[1]//text()",
+        "published_at": "//div//table//td[normalize-space(text())='Datum objave']/following-sibling::td[1]//text()",
+        "registered": "//div//table//td[normalize-space(text())='Registrovan']/following-sibling::td[1]",
+        "metallic": "//div//table//td[normalize-space(text())='Metalik']/following-sibling::td[1]",
+        "alloy_wheels": "//div//table//td[normalize-space(text())='Alu felge']/following-sibling::td[1]",
+        "digital_air_conditioning": "//div//table//td[normalize-space(text())='Digitalna klima']/following-sibling::td[1]",
+        "steering_wheel_controls": "//div//table//td[normalize-space(text())='Komande na volanu']/following-sibling::td[1]",
+        "navigation": "//div//table//td[normalize-space(text())='Navigacija']/following-sibling::td[1]",
+        "touch_screen_ekran": "//div//table//td[normalize-space(text())='Touch screen (ekran)']/following-sibling::td[1]",
+        "head_up_display": "//div//table//td[normalize-space(text())='Head up display']/following-sibling::td[1]",
+        "usb_port": "//div//table//td[normalize-space(text())='USB port']/following-sibling::td[1]",
+        "cruise_control": "//div//table//td[normalize-space(text())='Tempomat']/following-sibling::td[1]",
+        "bluetooth": "//div//table//td[normalize-space(text())='Bluetooth']/following-sibling::td[1]",
+        "car_play": "//div//table//td[normalize-space(text())='Car play']/following-sibling::td[1]",
+        "rain_sensor": "//div//table//td[normalize-space(text())='Senzor kiše']/following-sibling::td[1]",
+        "park_assist": "//div//table//td[normalize-space(text())='Park assist']/following-sibling::td[1]",
+        "automatic_light_sensor": "//div//table//td[normalize-space(text())='Senzor auto. svjetla']/following-sibling::td[1]",
+        "blind_spot_sensor": "//div//table//td[normalize-space(text())='Senzor mrtvog ugla']/following-sibling::td[1]",
+        "start_stop_system": "//div//table//td[normalize-space(text())='Start-Stop sistem']/following-sibling::td[1]",
+        "hill_assist": "//div//table//td[normalize-space(text())='Hill assist']/following-sibling::td[1]",
+        "seat_memory": "//div//table//td[normalize-space(text())='Memorija sjedišta']/following-sibling::td[1]",
+        "seat_massage": "//div//table//td[normalize-space(text())='Masaža sjedišta']/following-sibling::td[1]",
+        "seat_heating": "//div//table//td[normalize-space(text())='Grijanje sjedišta']/following-sibling::td[1]",
+        "seat_cooling": "//div//table//td[normalize-space(text())='Hlađenje sjedišta']/following-sibling::td[1]",
+        "electric_windows": "//div//table//td[normalize-space(text())='El. podizači stakala']/following-sibling::td[1]",
+        "electric_seat_adjustment": "//div//table//td[normalize-space(text())='El. pomjeranje sjedišta']/following-sibling::td[1]",
+        "armrest": "//div//table//td[normalize-space(text())='Naslon za ruku']/following-sibling::td[1]",
+        "panoramic_roof": "//div//table//td[normalize-space(text())='Panorama krov']/following-sibling::td[1]",
+        "spoiler": "//div//table//td[normalize-space(text())='Šiber']/following-sibling::td[1]",
+        "fog_lights": "//div//table//td[normalize-space(text())='Maglenke']/following-sibling::td[1]",
+        "electric_mirrors": "//div//table//td[normalize-space(text())='Električni retrovizori']/following-sibling::td[1]",
+        "alarm": "//div//table//td[normalize-space(text())='Alarm']/following-sibling::td[1]",
+        "central_locking": "//div//table//td[normalize-space(text())='Centralna brava']/following-sibling::td[1]",
+        "remote_unlocking": "//div//table//td[normalize-space(text())='Daljinsko otključavanje']/following-sibling::td[1]",
+        "airbag": "//div//table//td[normalize-space(text())='Airbag']/following-sibling::td[1]",
+        "abs": "//div//table//td[normalize-space(text())='ABS']/following-sibling::td[1]",
+        "esp_electronic_stability_program": "//div//table//td[normalize-space(text())='ESP']/following-sibling::td[1]",
+        "dpf_fap_filter": "//div//table//td[normalize-space(text())='DPF/FAP filter']/following-sibling::td[1]",
+        "power_steering": "//div//table//td[normalize-space(text())='Servo volan']/following-sibling::td[1]",
+        "turbo": "//div//table//td[normalize-space(text())='Turbo']/following-sibling::td[1]",
+        "isofix": "//div//table//td[normalize-space(text())='ISOFIX']/following-sibling::td[1]",
+        "tow_hook": "//div//table//td[normalize-space(text())='Auto kuka']/following-sibling::td[1]",
+        "customs_cleared": "//div//table//td[normalize-space(text())='Ocarinjen']/following-sibling::td[1]",
+        "foreign_license_plates": "//div//table//td[normalize-space(text())='Strane tablice']/following-sibling::td[1]",
+        "on_lease": "//div//table//td[normalize-space(text())='Na lizingu']/following-sibling::td[1]",
+        "service_book": "//div//table//td[normalize-space(text())='Servisna knjiga']/following-sibling::td[1]",
+        "accident_damaged": "//div//table//td[normalize-space(text())='Udaren']/following-sibling::td[1]",
+        "disabled_accessible": "//div//table//td[normalize-space(text())='Prilagođen invalidima']/following-sibling::td[1]",
+        "oldtimer": "//div//table//td[normalize-space(text())='Oldtimer']/following-sibling::td[1]",
     }
 
     params = {}
     for attribute, xpath in xpaths.items():
         value = selector.xpath(xpath).get()
-        if isinstance(value, str):
+        if not xpath.endswith("text()"):
+            value = True if value else False
+        elif isinstance(value, str):
             value = value.strip()
-        params[attribute] = value if value else None
+        params[attribute] = value
 
     if params["article_id"]:
         params["article_id"] = (
@@ -121,26 +191,9 @@ def parse_vehicle_info(selector: Selector) -> Dict:
     if params["build_year"]:
         params["build_year"] = int(params["build_year"])
 
-    specs = {}
-    specs_rows_list = []
-    specs_rows_list.extend(
-        selector.xpath(
-            "//div/h2[normalize-space(text())='Specifikacije']/following-sibling::table[1]//tr"
-        ).getall()
-    )
-    specs_rows_list.extend(
-        selector.xpath(
-            "//div/h2[normalize-space(text())='Oprema']/following-sibling::table[1]//tr"
-        ).getall()
-    )
-    for spec_row in specs_rows_list:
-        values = Selector(text=spec_row).xpath("//td//text()").getall()
-        if values:
-            spec = values[0]
-            value = values[1].strip() if len(values) > 1 else True
-            specs[spec.strip()] = value
+    if params["published_at"]:
+        params["published_at"] = datetime.strptime(params["published_at"], "%d.%m.%Y").strftime("%Y-%m-%d")
 
-    params["specs"] = specs
     return params
 
 
@@ -218,7 +271,6 @@ if __name__ == '__main__':
                     selector = Selector(text=driver.page_source)
                     vehicle = parse_vehicle_info(selector)
                     vehicle["url"] = listing_url
-                    Vehicle(**vehicle)
                     vehicle["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     vehicles.append(vehicle)
                 except Exception as err:
