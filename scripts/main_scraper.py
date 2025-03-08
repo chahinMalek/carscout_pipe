@@ -209,8 +209,8 @@ if __name__ == '__main__':
         "brand={brand_id}&models=0&brands={brand_id}&page={page}&created_gte=-7+days"
     )
 
-    request_min_delay_seconds = 2
-    request_max_delay_seconds = 6
+    request_min_delay_seconds = 1
+    request_max_delay_seconds = 4
     wait_time_seconds = 10
     run_id = str(uuid.uuid4())
 
