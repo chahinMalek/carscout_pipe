@@ -21,6 +21,8 @@ from selenium_stealth import stealth
 from tqdm import tqdm
 
 from src.exceptions import OlxPageNotFound
+from src.xpaths import ATTRIBUTE_XPATHS
+from src.vehicle_model import Vehicle
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -102,129 +104,16 @@ def get_next_page(page_source: str):
 
 
 def parse_vehicle_info(selector: Selector) -> Dict:
-    xpaths = {
-        "title": "//div//h1[contains(@class, 'main-title-listing')]/text()",
-        "price": "//div//span[contains(@class, 'price-heading')]/text()",
-        "location": "//div//label[svg/path[@d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z']]/text()",
-        "state": "//div//label[svg/path[@d='M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z']]/text()",
-        "article_id": "//div//label[svg/path[@d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z']]/text()",
-        "brand": "//div//td[normalize-space(text())='Proizvođač']/following-sibling::td[1]//text()",
-        "model": "//div//td[normalize-space(text())='Model']/following-sibling::td[1]//text()",
-        "fuel_type": "//div//td[normalize-space(text())='Gorivo']/following-sibling::td[1]//text()",
-        "build_year": "//div//td[normalize-space(text())='Godište']/following-sibling::td[1]//text()",
-        "mileage": "//div//td[normalize-space(text())='Kilometraža']/following-sibling::td[1]//text()",
-        "engine_volume": "//div//td[normalize-space(text())='Kubikaža']/following-sibling::td[1]//text()",
-        "engine_power": "//div//td[normalize-space(text())='Snaga motora (KW)']/following-sibling::td[1]//text()",
-        "num_doors": "//div//td[normalize-space(text())='Broj vrata']/following-sibling::td[1]//text()",
-        "transmission": "//div//td[normalize-space(text())='Transmisija']/following-sibling::td[1]//text()",
-        "image_url": "//div[@class='main-image-overlay-content']//div[@class='gallery-items']/img[1]/@src",
-        "horsepower": "//div//table//td[normalize-space(text())='Konjskih snaga']/following-sibling::td[1]//text()",
-        "weight_kg": "//div//table//td[normalize-space(text())='Masa/Težina (kg)']/following-sibling::td[1]//text()",
-        "vehicle_type": "//div//table//td[normalize-space(text())='Tip']/following-sibling::td[1]//text()",
-        "climate": "//div//table//td[normalize-space(text())='Klimatizacija']/following-sibling::td[1]//text()",
-        "audio": "//div//table//td[normalize-space(text())='Muzika/ozvučenje']/following-sibling::td[1]//text()",
-        "parking_sensors": "//div//table//td[normalize-space(text())='Parking senzori']/following-sibling::td[1]//text()",
-        "parking_camera": "//div//table//td[normalize-space(text())='Parking kamera']/following-sibling::td[1]//text()",
-        "drivetrain": "//div//table//td[normalize-space(text())='Pogon']/following-sibling::td[1]//text()",
-        "year_first_registered": "//div//table//td[normalize-space(text())='Godina prve registracije']/following-sibling::td[1]//text()",
-        "registered_until": "//div//table//td[normalize-space(text())='Registrovan do']/following-sibling::td[1]//text()",
-        "color": "//div//table//td[normalize-space(text())='Boja']/following-sibling::td[1]//text()",
-        "gears": "//div//table//td[normalize-space(text())='Broj stepeni prijenosa']/following-sibling::td[1]//text()",
-        "tyres": "//div//table//td[normalize-space(text())='Posjeduje gume']/following-sibling::td[1]//text()",
-        "emission": "//div//table//td[normalize-space(text())='Emisioni standard']/following-sibling::td[1]//text()",
-        "interior": "//div//table//td[normalize-space(text())='Vrsta enterijera']/following-sibling::td[1]//text()",
-        "curtains": "//div//table//td[normalize-space(text())='Rolo zavjese']/following-sibling::td[1]//text()",
-        "lights": "//div//table//td[normalize-space(text())='Svjetla']/following-sibling::td[1]//text()",
-        "number_of_seats": "//div//table//td[normalize-space(text())='Sjedećih mjesta']/following-sibling::td[1]//text()",
-        "rim_size": "//div//table//td[normalize-space(text())='Veličina felgi']/following-sibling::td[1]//text()",
-        "warranty": "//div//table//td[normalize-space(text())='Garancija']/following-sibling::td[1]//text()",
-        "security": "//div//table//td[normalize-space(text())='Zaštita/Blokada']/following-sibling::td[1]//text()",
-        "previous_owners": "//div//table//td[normalize-space(text())='Broj prethodnih vlasnika']/following-sibling::td[1]//text()",
-        "published_at": "//div//table//td[normalize-space(text())='Datum objave']/following-sibling::td[1]//text()",
-        "registered": "//div//table//td[normalize-space(text())='Registrovan']/following-sibling::td[1]",
-        "metallic": "//div//table//td[normalize-space(text())='Metalik']/following-sibling::td[1]",
-        "alloy_wheels": "//div//table//td[normalize-space(text())='Alu felge']/following-sibling::td[1]",
-        "digital_air_conditioning": "//div//table//td[normalize-space(text())='Digitalna klima']/following-sibling::td[1]",
-        "steering_wheel_controls": "//div//table//td[normalize-space(text())='Komande na volanu']/following-sibling::td[1]",
-        "navigation": "//div//table//td[normalize-space(text())='Navigacija']/following-sibling::td[1]",
-        "touch_screen": "//div//table//td[normalize-space(text())='Touch screen (ekran)']/following-sibling::td[1]",
-        "heads_up_display": "//div//table//td[normalize-space(text())='Head up display']/following-sibling::td[1]",
-        "usb_port": "//div//table//td[normalize-space(text())='USB port']/following-sibling::td[1]",
-        "cruise_control": "//div//table//td[normalize-space(text())='Tempomat']/following-sibling::td[1]",
-        "bluetooth": "//div//table//td[normalize-space(text())='Bluetooth']/following-sibling::td[1]",
-        "car_play": "//div//table//td[normalize-space(text())='Car play']/following-sibling::td[1]",
-        "rain_sensor": "//div//table//td[normalize-space(text())='Senzor kiše']/following-sibling::td[1]",
-        "park_assist": "//div//table//td[normalize-space(text())='Park assist']/following-sibling::td[1]",
-        "automatic_light_sensor": "//div//table//td[normalize-space(text())='Senzor auto. svjetla']/following-sibling::td[1]",
-        "blind_spot_sensor": "//div//table//td[normalize-space(text())='Senzor mrtvog ugla']/following-sibling::td[1]",
-        "start_stop_system": "//div//table//td[normalize-space(text())='Start-Stop sistem']/following-sibling::td[1]",
-        "hill_assist": "//div//table//td[normalize-space(text())='Hill assist']/following-sibling::td[1]",
-        "seat_memory": "//div//table//td[normalize-space(text())='Memorija sjedišta']/following-sibling::td[1]",
-        "seat_massage": "//div//table//td[normalize-space(text())='Masaža sjedišta']/following-sibling::td[1]",
-        "seat_heating": "//div//table//td[normalize-space(text())='Grijanje sjedišta']/following-sibling::td[1]",
-        "seat_cooling": "//div//table//td[normalize-space(text())='Hlađenje sjedišta']/following-sibling::td[1]",
-        "electric_windows": "//div//table//td[normalize-space(text())='El. podizači stakala']/following-sibling::td[1]",
-        "electric_seat_adjustment": "//div//table//td[normalize-space(text())='El. pomjeranje sjedišta']/following-sibling::td[1]",
-        "armrest": "//div//table//td[normalize-space(text())='Naslon za ruku']/following-sibling::td[1]",
-        "panoramic_roof": "//div//table//td[normalize-space(text())='Panorama krov']/following-sibling::td[1]",
-        "sunroof": "//div//table//td[normalize-space(text())='Šiber']/following-sibling::td[1]",
-        "fog_lights": "//div//table//td[normalize-space(text())='Maglenke']/following-sibling::td[1]",
-        "electric_mirrors": "//div//table//td[normalize-space(text())='Električni retrovizori']/following-sibling::td[1]",
-        "alarm": "//div//table//td[normalize-space(text())='Alarm']/following-sibling::td[1]",
-        "central_lock": "//div//table//td[normalize-space(text())='Centralna brava']/following-sibling::td[1]",
-        "remote_unlock": "//div//table//td[normalize-space(text())='Daljinsko otključavanje']/following-sibling::td[1]",
-        "airbag": "//div//table//td[normalize-space(text())='Airbag']/following-sibling::td[1]",
-        "abs": "//div//table//td[normalize-space(text())='ABS']/following-sibling::td[1]",
-        "electronic_stability": "//div//table//td[normalize-space(text())='ESP']/following-sibling::td[1]",
-        "dpf_fap_filter": "//div//table//td[normalize-space(text())='DPF/FAP filter']/following-sibling::td[1]",
-        "power_steering": "//div//table//td[normalize-space(text())='Servo volan']/following-sibling::td[1]",
-        "turbo": "//div//table//td[normalize-space(text())='Turbo']/following-sibling::td[1]",
-        "isofix": "//div//table//td[normalize-space(text())='ISOFIX']/following-sibling::td[1]",
-        "tow_hook": "//div//table//td[normalize-space(text())='Auto kuka']/following-sibling::td[1]",
-        "customs_cleared": "//div//table//td[normalize-space(text())='Ocarinjen']/following-sibling::td[1]",
-        "foreign_license_plates": "//div//table//td[normalize-space(text())='Strane tablice']/following-sibling::td[1]",
-        "on_lease": "//div//table//td[normalize-space(text())='Na lizingu']/following-sibling::td[1]",
-        "service_history": "//div//table//td[normalize-space(text())='Servisna knjiga']/following-sibling::td[1]",
-        "damaged": "//div//table//td[normalize-space(text())='Udaren']/following-sibling::td[1]",
-        "disabled_accessible": "//div//table//td[normalize-space(text())='Prilagođen invalidima']/following-sibling::td[1]",
-        "oldtimer": "//div//table//td[normalize-space(text())='Oldtimer']/following-sibling::td[1]",
-    }
-
     params = {}
-    for attribute, xpath in xpaths.items():
-        value = selector.xpath(xpath).get()
-        if not xpath.endswith("text()"):
+    for attribute, x in ATTRIBUTE_XPATHS.items():
+        value = selector.xpath(x.path).get()
+        if x.type == bool:
             value = True if value else False
-        elif isinstance(value, str):
+        elif x.type == str and isinstance(value, str):
             value = value.strip()
         params[attribute] = value
-
-    if params["article_id"]:
-        params["article_id"] = (
-            params["article_id"].replace("\n", " ").split(": ")[-1].strip()
-        )
-
-    if params["price"]:
-        if params["price"].lower().strip() == "na upit":
-            params["price"] = None
-        else:
-            price_str = (
-                params["price"].split(" ")[0].replace(".", "").replace("KM", "")
-            )
-            params["price"] = float(price_str.replace(",", "."))
-
-    if params["mileage"]:
-        params["mileage"] = int(
-            params["mileage"].split(" ")[0].replace(".", "").replace("km", "")
-        )
-
-    if params["build_year"]:
-        params["build_year"] = int(params["build_year"])
-
-    if params["published_at"]:
-        params["published_at"] = datetime.strptime(params["published_at"], "%d.%m.%Y").strftime("%Y-%m-%d")
-
-    return params
+    vehicle = Vehicle(**params)
+    return vehicle.model_dump()
 
 
 if __name__ == '__main__':
@@ -269,7 +158,7 @@ if __name__ == '__main__':
                     driver, url,
                     min_delay=request_min_delay_seconds,
                     max_delay=request_min_delay_seconds,
-                    wait_time_seconds=wait_time_seconds,
+                    timeout_after=wait_time_seconds,
                 )
                 selector = Selector(text=articles_page_source)
                 listing_urls_xpath = "//div[contains(@class, 'articles')]//div[contains(@class, 'cardd')]//a/@href"
@@ -294,7 +183,7 @@ if __name__ == '__main__':
                             driver, listing_url,
                             min_delay=request_min_delay_seconds,
                             max_delay=request_min_delay_seconds,
-                            wait_time_seconds=wait_time_seconds,
+                            timeout_after=wait_time_seconds,
                         )
                         selector = Selector(text=page_source)
                         vehicle = parse_vehicle_info(selector)
