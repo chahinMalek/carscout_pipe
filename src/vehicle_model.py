@@ -1,7 +1,12 @@
+import logging
 from datetime import datetime
+import copy
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel
 from src.value_mappings import *
+
+
+logger = logging.getLogger(__name__)
 
 
 class Vehicle(BaseModel):
@@ -11,19 +16,19 @@ class Vehicle(BaseModel):
     price: Optional[float] = None
     location: Optional[str] = None
     state: Optional[str] = None
-    article_id: Optional[str] = None
+    article_id: Optional[int] = None
     brand: Optional[str] = None
     model: Optional[str] = None
     fuel_type: Optional[str] = None
     build_year: Optional[int] = None
     mileage: Optional[int] = None
     engine_volume: Optional[float] = None
-    engine_power: Optional[int] = None
+    engine_power: Optional[float] = None
     num_doors: Optional[str] = None
     transmission: Optional[str] = None
     image_url: Optional[str] = None
-    horsepower: Optional[int] = None
-    weight_kg: Optional[int] = None
+    horsepower: Optional[float] = None
+    weight_kg: Optional[float] = None
     vehicle_type: Optional[str] = None
     climate: Optional[str] = None
     audio: Optional[str] = None
@@ -93,193 +98,95 @@ class Vehicle(BaseModel):
     disabled_accessible: Optional[bool] = None
     oldtimer: Optional[bool] = None
 
-    @field_validator('price', mode='before')
     @classmethod
-    def transform_price(cls, v):
-        if not v or v.lower().strip() == "na upit":
-            return None
-        try:
-            price_str = v.split(" ")[0].replace(".", "").replace("KM", "")
-            return float(price_str.replace(",", "."))
-        except (ValueError, AttributeError):
-            return None
+    def from_raw_dict(cls, raw_dict: dict) -> "Vehicle":
+        parsed_dict = copy.deepcopy(raw_dict)
 
-    @field_validator('mileage', mode='before')
-    @classmethod
-    def transform_mileage(cls, v):
-        if not v:
-            return None
-        try:
-            return int(v.split(" ")[0].replace(".", "").replace("km", ""))
-        except (ValueError, AttributeError):
-            return None
+        # transform price
+        raw_price = raw_dict.get("price")
+        if not raw_price or raw_price.lower().strip() == "na upit":
+            raw_price = None
+        else:
+            try:
+                raw_price = float(raw_price.split(" ")[0].replace(".", "").replace("KM", ""))
+            except Exception as err:
+                logger.error(f"Error transforming price: {err}")
+                raw_price = None
+        parsed_dict["price"] = raw_price
 
-    @field_validator('build_year', mode='before')
-    @classmethod
-    def transform_year(cls, v):
-        if not v:
-            return None
-        try:
-            return int(v)
-        except (ValueError, AttributeError):
-            return None
+        # transform mileage
+        raw_mileage = raw_dict.get("mileage")
+        if raw_mileage:
+            try:
+                raw_mileage = int(raw_mileage.split(" ")[0].replace(".", "").replace("km", ""))
+            except Exception as err:
+                logger.error(f"Error transforming mileage: {err}")
+                raw_mileage = None
+        parsed_dict["mileage"] = raw_mileage
 
-    @field_validator('published_at', mode='before')
-    @classmethod
-    def transform_date(cls, v):
-        if not v:
-            return None
-        try:
-            return datetime.strptime(v, "%d.%m.%Y").strftime("%Y-%m-%d")
-        except (ValueError, AttributeError):
-            return None
+        # transform build year
+        raw_build_year = raw_dict.get("build_year")
+        if raw_build_year:
+            try:
+                raw_build_year = int(raw_build_year)
+            except Exception as err:
+                logger.error(f"Error transforming build year: {err}")
+                raw_build_year = None
+        parsed_dict["build_year"] = raw_build_year
 
-    @field_validator('article_id', mode='before')
-    @classmethod
-    def transform_article_id(cls, v):
-        if not v:
-            return None
-        return v.replace("\n", " ").split(": ")[-1].strip()
+        # transform published_at
+        raw_published_at = raw_dict.get("published_at")
+        if raw_published_at:
+            try:
+                raw_published_at = datetime.strptime(raw_published_at, "%d.%m.%Y").strftime("%Y-%m-%d")
+            except Exception as err:
+                logger.error(f"Error transforming published at: {err}")
+                raw_published_at = None
+        parsed_dict["published_at"] = raw_published_at
 
-    @field_validator('fuel_type', mode='before')
-    @classmethod
-    def map_fuel_type(cls, v):
-        if not v:
-            return None
-        return FUEL_TYPE_MAPPING.get(v.strip(), v)
+        # transform article_id
+        raw_article_id = raw_dict.get("article_id")
+        if raw_article_id:
+            try:
+                raw_article_id = str(raw_article_id).replace("\n", " ").split(": ")[-1].strip()
+                raw_article_id = int(raw_article_id)
+            except Exception as err:
+                logger.error(f"Error transforming article id: {err}")
+                raw_article_id = None
+        parsed_dict["article_id"] = raw_article_id
 
-    @field_validator('transmission', mode='before')
-    @classmethod
-    def map_transmission(cls, v):
-        if not v:
-            return None
-        return TRANSMISSION_MAPPING.get(v.strip(), v)
+        # apply mappings
+        mappings = {
+            "fuel_type": FUEL_TYPE_MAPPING,
+            "transmission": TRANSMISSION_MAPPING,
+            "state": STATE_MAPPING,
+            "drivetrain": DRIVETRAIN_MAPPING,
+            "climate": CLIMATE_MAPPING,
+            "audio": AUDIO_MAPPING,
+            "parking_sensors": PARKING_SENSORS_MAPPING,
+            "parking_camera": PARKING_CAMERA_MAPPING,
+            "interior": INTERIOR_MAPPING,
+            "curtains": CURTAIN_MAPPING,
+            "lights": LIGHTS_MAPPING,
+            "number_of_seats": SEATS_MAPPING,
+            "security": SECURITY_MAPPING,
+            "tyres": TYRES_MAPPING,
+            "previous_owners": PREVIOUS_OWNERS_MAPPING,
+            "vehicle_type": TYPE_MAPPING,
+            "year_first_registered": FIRST_REGISTERED_MAPPING,
+            "color": COLOR_MAPPING,
+            "rim_size": RIM_SIZE_MAPPING,
+            "warranty": WARRANTY_MAPPING,
+        }
 
-    @field_validator('state', mode='before')
-    @classmethod
-    def map_state(cls, v):
-        if not v:
-            return None
-        return STATE_MAPPING.get(v.strip(), v)
+        for key, mapping in mappings.items():
+            raw_value = raw_dict.get(key)
+            if raw_value:
+                raw_value = str(raw_value).strip()
+                raw_value = mapping.get(raw_value, raw_value)
+            parsed_dict[key] = raw_value
 
-    @field_validator('drivetrain', mode='before')
-    @classmethod
-    def map_drivetrain(cls, v):
-        if not v:
-            return None
-        return DRIVETRAIN_MAPPING.get(v.strip(), v)
-
-    @field_validator('climate', mode='before')
-    @classmethod
-    def map_climate(cls, v):
-        if not v:
-            return None
-        return CLIMATE_MAPPING.get(v.strip(), v)
-
-    @field_validator('audio', mode='before')
-    @classmethod
-    def map_audio(cls, v):
-        if not v:
-            return None
-        return AUDIO_MAPPING.get(v.strip(), v)
-
-    @field_validator('parking_sensors', mode='before')
-    @classmethod
-    def map_parking_sensors(cls, v):
-        if not v:
-            return None
-        return PARKING_SENSORS_MAPPING.get(v.strip(), v)
-
-    @field_validator('parking_camera', mode='before')
-    @classmethod
-    def map_parking_camera(cls, v):
-        if not v:
-            return None
-        return PARKING_CAMERA_MAPPING.get(v.strip(), v)
-
-    @field_validator('interior', mode='before')
-    @classmethod
-    def map_interior(cls, v):
-        if not v:
-            return None
-        return INTERIOR_MAPPING.get(v.strip(), v)
-
-    @field_validator('curtains', mode='before')
-    @classmethod
-    def map_curtains(cls, v):
-        if not v:
-            return None
-        return CURTAIN_MAPPING.get(v.strip(), v)
-
-    @field_validator('lights', mode='before')
-    @classmethod
-    def map_lights(cls, v):
-        if not v:
-            return None
-        return LIGHTS_MAPPING.get(v.strip(), v)
-
-    @field_validator('number_of_seats', mode='before')
-    @classmethod
-    def map_number_of_seats(cls, v):
-        if not v:
-            return None
-        return SEATS_MAPPING.get(v.strip(), v)
-
-    @field_validator('security', mode='before')
-    @classmethod
-    def map_security(cls, v):
-        if not v:
-            return None
-        return SECURITY_MAPPING.get(v.strip(), v)
-
-    @field_validator('tyres', mode='before')
-    @classmethod
-    def map_tyres(cls, v):
-        if not v:
-            return None
-        return TYRES_MAPPING.get(v.strip(), v)
-
-    @field_validator('previous_owners', mode='before')
-    @classmethod
-    def map_previous_owners(cls, v):
-        if not v:
-            return None
-        return PREVIOUS_OWNERS_MAPPING.get(v.strip(), v)
-
-    @field_validator('vehicle_type', mode='before')
-    @classmethod
-    def map_vehicle_type(cls, v):
-        if not v:
-            return None
-        return TYPE_MAPPING.get(v.strip(), v)
-
-    @field_validator('year_first_registered', mode='before')
-    @classmethod
-    def map_year_first_registered(cls, v):
-        if not v:
-            return None
-        return FIRST_REGISTERED_MAPPING.get(v.strip(), v)
-
-    @field_validator('color', mode='before')
-    @classmethod
-    def map_color(cls, v):
-        if not v:
-            return None
-        return COLOR_MAPPING.get(v.strip(), v)
-
-    @field_validator('rim_size', mode='before')
-    @classmethod
-    def map_rim_size(cls, v):
-        if not v:
-            return None
-        return RIM_SIZE_MAPPING.get(v.strip(), v)
-
-    @field_validator('warranty', mode='before')
-    @classmethod
-    def map_warranty(cls, v):
-        if not v:
-            return None
-        return WARRANTY_MAPPING.get(v.strip(), v)
+        return cls(**parsed_dict)
 
 
     class Config:

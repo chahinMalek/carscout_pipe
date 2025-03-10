@@ -21,7 +21,7 @@ from selenium_stealth import stealth
 from tqdm import tqdm
 
 from src.exceptions import OlxPageNotFound
-from src.xpaths import ATTRIBUTE_XPATHS
+from src.xpaths import ATTRIBUTE_SELECTORS
 from src.vehicle_model import Vehicle
 
 logger = logging.getLogger(__name__)
@@ -105,14 +105,14 @@ def get_next_page(page_source: str):
 
 def parse_vehicle_info(selector: Selector) -> Dict:
     params = {}
-    for attribute, x in ATTRIBUTE_XPATHS.items():
-        value = selector.xpath(x.path).get()
-        if x.type == bool:
+    for attribute, s in ATTRIBUTE_SELECTORS.items():
+        value = selector.xpath(s.xpath).get()
+        if s.type == bool:
             value = True if value else False
-        elif x.type == str and isinstance(value, str):
+        elif s.type == str and isinstance(value, str):
             value = value.strip()
         params[attribute] = value
-    vehicle = Vehicle(**params)
+    vehicle = Vehicle.from_raw_dict(params)
     return vehicle.model_dump()
 
 
