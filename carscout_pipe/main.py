@@ -13,16 +13,14 @@ from requests import RequestException
 from scrapy import Selector
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 from tqdm import tqdm
 
-from src.exceptions import OlxPageNotFound
-from src.xpaths import ATTRIBUTE_SELECTORS
-from src.vehicle_model import Vehicle
+from carscout_pipe.exceptions import OlxPageNotFound
+from carscout_pipe.attribute_selectors import ATTRIBUTE_SELECTORS
+from carscout_pipe.data_models.vehicles.schema import Vehicle
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

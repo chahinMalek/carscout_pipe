@@ -3,7 +3,7 @@ from datetime import datetime
 import copy
 from typing import Optional
 from pydantic import BaseModel
-from src.value_mappings import *
+from carscout_pipe.data_models.vehicles.field_mappings import *
 
 
 logger = logging.getLogger(__name__)
@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 class Vehicle(BaseModel):
     """Vehicle data model with validation and transformation logic"""
 
-    title: str
+    article_id: int
+    title: Optional[str] = None
     price: Optional[float] = None
     location: Optional[str] = None
     state: Optional[str] = None
-    article_id: Optional[int] = None
     brand: Optional[str] = None
     model: Optional[str] = None
     fuel_type: Optional[str] = None
@@ -108,7 +108,7 @@ class Vehicle(BaseModel):
             raw_price = None
         else:
             try:
-                raw_price = float(raw_price.split(" ")[0].replace(".", "").replace("KM", ""))
+                raw_price = float(raw_price.split(" ")[0].split(",")[0].replace(".", "").replace("KM", ""))
             except Exception as err:
                 logger.error(f"Error transforming price: {err}")
                 raw_price = None
