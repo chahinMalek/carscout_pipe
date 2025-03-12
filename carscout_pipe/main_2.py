@@ -1,28 +1,26 @@
 import logging
 import os
 import random
+import sqlite3
 import sys
 import time
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pandas as pd
-import sqlite3
-
 from backoff import on_exception, expo
 from requests import RequestException
 from scrapy import Selector
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 from tqdm import tqdm
 
-from carscout_pipe.exceptions import OlxPageNotFound
 from carscout_pipe.attribute_selectors import ATTRIBUTE_SELECTORS
 from carscout_pipe.data_models.vehicles.schema import Vehicle
+from carscout_pipe.exceptions import OlxPageNotFound
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -86,38 +84,26 @@ def get_page_source(
         raise err  # re-raise the error to continue backoff
 
 
-def parse_vehicle_info(driver, url: str) -> Optional[Dict]:
-    try:
-        page_source = get_page_source(
-            driver, v["url"],
-            min_delay=request_min_delay_seconds,
-            max_delay=request_min_delay_seconds,
-            timeout_after=wait_time_seconds,
-        )
-        selector = Selector(text=page_source)
-        params = {}
-        for attribute, s in ATTRIBUTE_SELECTORS.items():
-            value = selector.xpath(s.xpath).get()
-            if s.type == bool:
-                value = True if value else False
-            elif s.type == str and isinstance(value, str):
-                value = value.strip()
-            params[attribute] = value
-        params["url"] = url
-        params["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        vehicle = Vehicle.from_raw_dict(params)
-        if vehicle.sold:
-            logger.debug(f"Encountered sold vehicle: {vehicle.url}")
-        return vehicle.model_dump()
-
-    except OlxPageNotFound:
-        logger.error(f"Error retrieving vehicle page {url}: Not found.")
-        logger.debug(f"Encountered inactive vehicle: {url}")
-        return Vehicle.inactive_from_url(url).model_dump()
-
-    except Exception as err:
-        logger.error(f"Error retrieving vehicle page {url}: {err}")
-        return None
+def parse_vehicle_info(driver, url: str) -> Vehicle:
+    page_source = get_page_source(
+        driver, v["url"],
+        min_delay=request_min_delay_seconds,
+        max_delay=request_min_delay_seconds,
+        timeout_after=wait_time_seconds,
+    )
+    selector = Selector(text=page_source)
+    params = {}
+    for attribute, s in ATTRIBUTE_SELECTORS.items():
+        value = selector.xpath(s.xpath).get()
+        if s.type == bool:
+            value = True if value else False
+        elif s.type == str and isinstance(value, str):
+            value = value.strip()
+        params[attribute] = value
+    params["url"] = url
+    params["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    vehicle = Vehicle.from_raw_dict(params)
+    return vehicle
 
 
 def find_vehicles_to_rescrape(run_id: str) -> List[Dict]:
@@ -147,18 +133,20 @@ def find_vehicles_to_rescrape(run_id: str) -> List[Dict]:
             JOIN (SELECT url, MAX(scraped_at) AS latest_scraped_at FROM candidates GROUP BY url) lv
             ON c.url = lv.url AND c.scraped_at = lv.latest_scraped_at
         )
-        SELECT DISTINCT article_id, url, run_id, active FROM latest_versions
-        WHERE active = 1 AND sold = 0;
+        SELECT * FROM latest_versions WHERE active = 1 AND sold = 0;
         """
         cursor.execute(query, (run_id,))
+        columns = [desc[0] for desc in cursor.description]
         results = cursor.fetchall()
+        results = pd.DataFrame(results, columns=columns)
+        results = results.drop(columns=["id"])
+        results = results.to_dict(orient="records")
 
     except Exception as err:
         logger.error(f"Error initializing database: {err}")
     finally:
         conn.close()
-
-    return pd.DataFrame(results, columns=["article_id", "url", "run_id", "active"]).to_dict(orient="records")
+    return results
 
 
 def generate_batches(l, n):
@@ -170,7 +158,7 @@ if __name__ == '__main__':
 
     # todo: replace with most recent run_id
     run_id = 'ae7deaf6-9d1d-4565-bb38-487b5f9cafd8'
-    batch_size = 40
+    batch_size = 20
     request_min_delay_seconds = 3
     request_max_delay_seconds = 5
     wait_time_seconds = 10
@@ -181,9 +169,6 @@ if __name__ == '__main__':
     logger.debug(f"{run_id=}")
 
     vehicles = find_vehicles_to_rescrape(run_id)
-
-
-
     logger.info(f"Number of vehicles to process: {len(vehicles)}")
     random.shuffle(vehicles)
     batches = generate_batches(vehicles, batch_size)
@@ -194,17 +179,35 @@ if __name__ == '__main__':
     output_partfile_template = os.path.join(output_dir, filename_template)
 
     # todo: replace with the actual next global idx of the provided run_id
-    global_idx = 500
+    global_idx = 200
     driver = init_driver()
     pbar = tqdm(total=len(vehicles), desc=f"Processing listings", file=open(os.devnull, 'w'))
 
     for batch in batches:
         results = []
         for v in batch:
-            vehicle = parse_vehicle_info(driver, v["url"])
+            url = v["url"]
+            vehicle = None
+
+            try:
+                vehicle = parse_vehicle_info(driver, v["url"])
+                if vehicle.sold:
+                    logger.debug(f"Encountered sold vehicle: {vehicle.url}")
+                vehicle = vehicle.model_dump()
+
+            except OlxPageNotFound:
+                logger.error(f"Error retrieving vehicle page {url}: Not found.")
+                logger.debug(f"Encountered inactive vehicle: {url}")
+                vehicle = {k: v for k, v in v.items()}
+                vehicle["active"] = False
+
+            except Exception as err:
+                logger.error(f"Error retrieving vehicle page {url}: {err}")
+
             if vehicle:
                 vehicle["run_id"] = run_id
                 results.append(vehicle)
+
             logger.info(str(pbar))
             pbar.update(1)
 
