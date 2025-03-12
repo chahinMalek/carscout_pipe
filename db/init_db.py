@@ -125,7 +125,9 @@ def init_database(db_path: str) -> None:
             oldtimer NUMERIC,
             url TEXT NOT NULL,
             scraped_at TEXT,
-            run_id TEXT NOT NULL
+            run_id TEXT NOT NULL,
+            active NUMERIC NOT NULL,
+            sold NUMERIC
         )
         ''')
         
@@ -164,7 +166,6 @@ def init_database(db_path: str) -> None:
                 (76, "Seat", "seat"),
             ]
         )
-        
         conn.commit()
         logger.info("Database initialization completed successfully")
 
@@ -176,7 +177,6 @@ def init_database(db_path: str) -> None:
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         conn.close()
-        db_path.unlink()
         raise
     
     finally:
@@ -198,22 +198,19 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+if __name__ == "__main__":
     args = parse_args()
-    
+
     if Path(args.db_path).exists() and not args.overwrite:
         logger.error(
             f"Database already exists at {args.db_path}. "
             "Use --overwrite to overwrite it."
         )
-        return 1
-    
+        exit(1)
+
     try:
         init_database(args.db_path)
-        return 0
+        exit(0)
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
-        return 1
-
-if __name__ == "__main__":
-    exit(main())
+        exit(1)

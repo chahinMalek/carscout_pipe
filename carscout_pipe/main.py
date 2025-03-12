@@ -116,9 +116,11 @@ def parse_vehicle_info(selector: Selector) -> Dict:
 
 if __name__ == '__main__':
 
-    brands_path = "../data/brands.csv"
+    # todo: replace with fetching brands from the db
+    brands_path = "./data/brands.csv"
     logger.debug(f"{brands_path=}")
     brands = pd.read_csv(brands_path).to_dict(orient="records")
+    random.shuffle(brands)
 
     driver = init_driver()
     url_template = (
@@ -136,7 +138,7 @@ if __name__ == '__main__':
     logger.debug(f"{wait_time_seconds=}")
     logger.debug(f"{run_id=}")
 
-    output_dir = f"../data/output/{run_id}/"
+    output_dir = f"./data/output/{run_id}/"
     os.makedirs(output_dir, exist_ok=True)
     filename_template = "part_{idx:08}.csv"
     output_partfile_template = os.path.join(output_dir, filename_template)
@@ -190,9 +192,9 @@ if __name__ == '__main__':
                         vehicle["run_id"] = run_id
                         vehicles.append(vehicle)
                     except TimeoutException:
-                        logger.error(f"Error retrieving vehicle page {url}: Timed out.")
+                        logger.error(f"Error retrieving vehicle page {listing_url}: Timed out.")
                     except OlxPageNotFound as err:
-                        logger.error(f"Error retrieving vehicle page {url}: Not found.")
+                        logger.error(f"Error retrieving vehicle page {listing_url}: Not found.")
                     except Exception as err:
                         logger.error(f"Unexpected error occurred while scraping vehicle {listing_url}: {err}")
                     finally:

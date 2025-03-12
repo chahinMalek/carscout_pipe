@@ -7,6 +7,7 @@ class AttributeSelector(NamedTuple):
 
 
 ATTRIBUTE_SELECTORS = {
+    "sold": AttributeSelector(xpath="//div[@class='finished-listing']", type=bool),
     "title": AttributeSelector(xpath="//div//h1[contains(@class, 'main-title-listing')]/text()", type=str),
     "price": AttributeSelector(xpath="//div//span[contains(@class, 'price-heading')]/text()", type=str),
     "location": AttributeSelector(xpath="//div//label[svg/path[@d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z']]/text()", type=str),

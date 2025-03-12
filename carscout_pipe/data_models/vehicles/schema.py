@@ -1,10 +1,13 @@
+import copy
 import logging
 from datetime import datetime
-import copy
 from typing import Optional
-from pydantic import BaseModel
-from carscout_pipe.data_models.vehicles.field_mappings import *
 
+import numpy as np
+from pydantic import BaseModel
+
+from carscout_pipe.data_models.vehicles.field_mappings import *
+from carscout_pipe.utils.common import check_date_format
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +100,16 @@ class Vehicle(BaseModel):
     damaged: Optional[bool] = None
     disabled_accessible: Optional[bool] = None
     oldtimer: Optional[bool] = None
+    url: Optional[str] = None
+    run_id: Optional[str] = None
+    scraped_at: Optional[str] = None
+    active: bool = True
+    sold: Optional[bool] = False
+
+    @classmethod
+    def inactive_from_url(cls, url: str) -> "Vehicle":
+        article_id = url.split("/")[-1]
+        return cls(article_id=article_id, url=url, active=False)
 
     @classmethod
     def from_raw_dict(cls, raw_dict: dict) -> "Vehicle":
@@ -104,56 +117,60 @@ class Vehicle(BaseModel):
 
         # transform price
         raw_price = raw_dict.get("price")
-        if not raw_price or raw_price.lower().strip() == "na upit":
-            raw_price = None
-        else:
-            try:
-                raw_price = float(raw_price.split(" ")[0].split(",")[0].replace(".", "").replace("KM", ""))
-            except Exception as err:
-                logger.error(f"Error transforming price: {err}")
+        if not (isinstance(raw_price, float) and not np.isnan(raw_price)):
+            if not raw_price or raw_price.lower().strip() == "na upit":
                 raw_price = None
-        parsed_dict["price"] = raw_price
+            else:
+                try:
+                    raw_price = float(raw_price.split(" ")[0].split(",")[0].replace(".", "").replace("KM", ""))
+                except Exception as err:
+                    logger.error(f"Error transforming price: {err}")
+                    raw_price = None
+            parsed_dict["price"] = raw_price
 
         # transform mileage
         raw_mileage = raw_dict.get("mileage")
-        if raw_mileage:
+        if isinstance(raw_mileage, str):
             try:
                 raw_mileage = int(raw_mileage.split(" ")[0].replace(".", "").replace("km", ""))
             except Exception as err:
                 logger.error(f"Error transforming mileage: {err}")
                 raw_mileage = None
-        parsed_dict["mileage"] = raw_mileage
+            parsed_dict["mileage"] = raw_mileage
 
         # transform build year
         raw_build_year = raw_dict.get("build_year")
-        if raw_build_year:
-            try:
-                raw_build_year = int(raw_build_year)
-            except Exception as err:
-                logger.error(f"Error transforming build year: {err}")
-                raw_build_year = None
-        parsed_dict["build_year"] = raw_build_year
+        if not isinstance(raw_build_year, int):
+            if raw_build_year:
+                try:
+                    raw_build_year = int(raw_build_year)
+                except Exception as err:
+                    logger.error(f"Error transforming build year: {err}")
+                    raw_build_year = None
+            parsed_dict["build_year"] = raw_build_year
 
         # transform published_at
         raw_published_at = raw_dict.get("published_at")
-        if raw_published_at:
-            try:
-                raw_published_at = datetime.strptime(raw_published_at, "%d.%m.%Y").strftime("%Y-%m-%d")
-            except Exception as err:
-                logger.error(f"Error transforming published at: {err}")
-                raw_published_at = None
-        parsed_dict["published_at"] = raw_published_at
+        if not (isinstance(raw_published_at, str) and check_date_format(raw_published_at, "%Y-%m-%d")):
+            if raw_published_at:
+                try:
+                    raw_published_at = datetime.strptime(raw_published_at, "%d.%m.%Y").strftime("%Y-%m-%d")
+                except Exception as err:
+                    logger.error(f"Error transforming published at: {err}")
+                    raw_published_at = None
+            parsed_dict["published_at"] = raw_published_at
 
         # transform article_id
         raw_article_id = raw_dict.get("article_id")
-        if raw_article_id:
-            try:
-                raw_article_id = str(raw_article_id).replace("\n", " ").split(": ")[-1].strip()
-                raw_article_id = int(raw_article_id)
-            except Exception as err:
-                logger.error(f"Error transforming article id: {err}")
-                raw_article_id = None
-        parsed_dict["article_id"] = raw_article_id
+        if not isinstance(raw_article_id, int):
+            if raw_article_id:
+                try:
+                    raw_article_id = str(raw_article_id).replace("\n", " ").split(": ")[-1].strip()
+                    raw_article_id = int(raw_article_id)
+                except Exception as err:
+                    logger.error(f"Error transforming article id: {err}")
+                    raw_article_id = None
+            parsed_dict["article_id"] = raw_article_id
 
         # apply mappings
         mappings = {
@@ -185,6 +202,10 @@ class Vehicle(BaseModel):
                 raw_value = str(raw_value).strip()
                 raw_value = mapping.get(raw_value, raw_value)
             parsed_dict[key] = raw_value
+
+        if parsed_dict["warranty"]:
+            if isinstance(parsed_dict["warranty"], float) and not np.isnan(parsed_dict["warranty"]):
+                parsed_dict["warranty"] = str(int(parsed_dict["warranty"]))
 
         return cls(**parsed_dict)
 
