@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from carscout_pipe.attribute_selectors import ATTRIBUTE_SELECTORS, AttributeSelector
 from carscout_pipe.data_models.vehicles.schema import Vehicle
 
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +40,23 @@ def build_dataset(input_dir: str, run_id: str) -> pd.DataFrame:
         raise ValueError("No valid data found in any partfiles")
 
     dataset = pd.concat(chunks, ignore_index=True)
+    dataset = dataset.sort_values(by=["scraped_at"], ascending=True, ignore_index=True)
+    dataset = dataset.drop_duplicates(["run_id", "url"], ignore_index=True, keep="last")
+
+    # todo: this is just a fix, root cause is in the main_2 script
+    for col in dataset:
+        expected_dtype = ATTRIBUTE_SELECTORS.get(col, AttributeSelector(xpath="", type=str)).type
+        if expected_dtype == bool:
+            dataset[col] = dataset[col].replace({0: False, 1: True, '0': False, '1': True, 'False': False, 'True': True})
+    if "active" not in dataset:
+        dataset["active"] = True
+    if "sold" not in dataset:
+        dataset["sold"] = False
+    dataset.loc[dataset["active"].isna(), "active"] = True
+    dataset.loc[dataset["sold"].isna(), "sold"] = False
+    dataset["active"] = dataset["active"].astype(bool)
+    dataset["sold"] = dataset["sold"].astype(bool)
+
     return dataset
 
 
@@ -76,8 +94,9 @@ def insert_vehicles_batch(db: sqlite3.Connection, vehicles: list[Vehicle], batch
 
 if __name__ == "__main__":
 
-    run_id = "ae7deaf6-9d1d-4565-bb38-487b5f9cafd8"
     # run_id = "64fddb00-4834-4655-827b-1722a00bf908"
+    run_id = "ae7deaf6-9d1d-4565-bb38-487b5f9cafd8"
+    run_id = "cc797e69-e715-4913-9b13-eb477f7170f1"
 
     input_dir = "data/output/"
     db_path = "data/carscout.db"
@@ -97,13 +116,12 @@ if __name__ == "__main__":
         except Exception as e:
             logger.error(f"Unexpected error occurred: {e}")
             exit(1)
+        dataset["run_id"] = run_id
         dataset.to_csv(dataset_path, index=False)
         logger.info(f"Dataset saved to {dataset_path}")
 
     logger.info(f"Loading dataset from {dataset_path}")
     dataset = pd.read_csv(dataset_path)
-    dataset["active"] = True
-    dataset["sold"] = False
 
     # step 2: perform validation
     valid_vehicles = []
