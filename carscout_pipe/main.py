@@ -12,15 +12,14 @@ from backoff import on_exception, expo
 from requests import RequestException
 from scrapy import Selector
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium_stealth import stealth
 from tqdm import tqdm
 
-from carscout_pipe.exceptions import OlxPageNotFound
 from carscout_pipe.attribute_selectors import ATTRIBUTE_SELECTORS
 from carscout_pipe.data_models.vehicles.schema import Vehicle
+from carscout_pipe.exceptions import OlxPageNotFound
+from carscout_pipe.utils.webdriver import init_driver
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -28,28 +27,6 @@ console_handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter("%(name)s - %(asctime)s - %(levelname)s - %(message)s")
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
-
-
-def init_driver():
-    logger.debug("Initializing WebDriver")
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("--blink-settings=imagesEnabled=false")
-    chrome_options.add_argument("--disable-search-engine-choice-screen")
-    chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--no-sandbox")
-    driver = webdriver.Chrome(options=chrome_options)
-    stealth(
-        driver,
-        languages=["en-US", "en"],
-        vendor="Google Inc.",
-        platform="Win32",
-        webgl_vendor="Intel Inc.",
-        renderer="Intel Iris OpenGL Engine",
-        fix_hairline=True,
-    )
-    return driver
 
 
 @on_exception(
@@ -70,12 +47,6 @@ def get_page_source(
         request_delay = random.uniform(min_delay, max_delay)
         time.sleep(request_delay)
         driver.get(url)
-        # WebDriverWait(driver, timeout_after).until(
-        #     EC.presence_of_element_located((By.CLASS_NAME, "articles"))
-        # )
-        # WebDriverWait(driver, timeout_after).until(
-        #     EC.presence_of_element_located((By.CLASS_NAME, "required-attributes"))
-        # )
         WebDriverWait(driver, timeout_after).until(
             lambda d: d.execute_script("return document.readyState") == "complete"
         )
@@ -116,106 +87,127 @@ def parse_vehicle_info(selector: Selector) -> Dict:
 
 if __name__ == '__main__':
 
+    # script-level parameters
     # todo: replace with fetching brands from the db
     brands_path = "./data/brands.csv"
-    logger.debug(f"{brands_path=}")
-    brands = pd.read_csv(brands_path).to_dict(orient="records")
-    random.shuffle(brands)
+    request_min_delay_seconds = 3
+    request_max_delay_seconds = 5
+    wait_time_seconds = 10
 
-    driver = init_driver()
+    # script-level constants
+    driver = None
     url_template = (
         "https://olx.ba/pretraga?attr=&attr_encoded=1&category_id=18&"
         "brand={brand_id}&models=0&brands={brand_id}&page={page}&created_gte=-7+days"
     )
-
-    request_min_delay_seconds = 3
-    request_max_delay_seconds = 5
-    wait_time_seconds = 10
     run_id = str(uuid.uuid4())
+    output_dir = f"./data/output/{run_id}/"
+    filename_template = "part_{idx:08}.csv"
+    output_partfile_template = os.path.join(output_dir, filename_template)
+    global_idx = 0
 
+    logger.debug("Starting process with parameters:")
+    logger.debug(f"{brands_path=}")
     logger.debug(f"{request_min_delay_seconds=}")
     logger.debug(f"{request_max_delay_seconds=}")
     logger.debug(f"{wait_time_seconds=}")
     logger.debug(f"{run_id=}")
 
-    output_dir = f"./data/output/{run_id}/"
+    logger.debug("Initializing output directory ...")
     os.makedirs(output_dir, exist_ok=True)
-    filename_template = "part_{idx:08}.csv"
-    output_partfile_template = os.path.join(output_dir, filename_template)
-    global_idx = 0
 
-    for brand_data in brands:
-        brand_id = brand_data["brand_id"]
-        next_page = "1"
+    logger.debug("Reading brands ...")
+    brands = pd.read_csv(brands_path).to_dict(orient="records")
 
-        while next_page:
-            url = url_template.format(brand_id=brand_id, page=next_page)
-            logger.info(f"Scraping listings from: {url}")
-            listing_urls = []
+    try:
+        try:
+            logger.debug("Initializing WebDriver")
+            driver = init_driver()
+        except (TimeoutError, WebDriverException) as e:
+            logger.error("Failed to initialize WebDriver. Exiting...")
+            sys.exit(1)
 
-            try:
-                articles_page_source = get_page_source(
-                    driver, url,
-                    min_delay=request_min_delay_seconds,
-                    max_delay=request_min_delay_seconds,
-                    timeout_after=wait_time_seconds,
-                )
-                selector = Selector(text=articles_page_source)
-                listing_urls_xpath = "//div[contains(@class, 'articles')]//div[contains(@class, 'cardd')]//a/@href"
-                listing_urls = selector.xpath(listing_urls_xpath).getall()
-                listing_urls = [f"https://olx.ba{url_suffix}" for url_suffix in listing_urls]
-                random.shuffle(listing_urls)
-            except TimeoutException:
-                logger.error(f"Error retrieving listings page {url}: Timed out.")
-            except OlxPageNotFound as err:
-                logger.error(f"Error retrieving listings page {url}: Not found.")
-            except Exception as err:
-                logger.error(f"Unexpected error occurred while scraping listings page {url}: {err}")
-            logger.debug("Listings retrieved successfully.")
-            logger.debug(f"{len(listing_urls)=}")
+        for brand_data in brands:
+            brand_id = brand_data["brand_id"]
+            next_page = "1"
 
-            if len(listing_urls) > 0:
-                vehicles = []
-                pbar = tqdm(listing_urls, desc=f"Processing listings", file=open(os.devnull, 'w'))
-                for listing_url in pbar:
-                    try:
-                        page_source = get_page_source(
-                            driver, listing_url,
-                            min_delay=request_min_delay_seconds,
-                            max_delay=request_min_delay_seconds,
-                            timeout_after=wait_time_seconds,
-                        )
-                        selector = Selector(text=page_source)
-                        vehicle = parse_vehicle_info(selector)
-                        vehicle["url"] = listing_url
-                        vehicle["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        vehicle["run_id"] = run_id
-                        vehicles.append(vehicle)
-                    except TimeoutException:
-                        logger.error(f"Error retrieving vehicle page {listing_url}: Timed out.")
-                    except OlxPageNotFound as err:
-                        logger.error(f"Error retrieving vehicle page {listing_url}: Not found.")
-                    except Exception as err:
-                        logger.error(f"Unexpected error occurred while scraping vehicle {listing_url}: {err}")
-                    finally:
-                        logger.info(str(pbar))
-                pbar.close()
-                logger.debug("All vehicles from the page retrieved successfully.")
+            while next_page:
+                url = url_template.format(brand_id=brand_id, page=next_page)
+                logger.info(f"Scraping listings from: {url}")
+                listing_urls = []
 
                 try:
-                    output_path = output_partfile_template.format(idx=global_idx)
-                    logger.debug(f"Saving batch into `{output_path}` ...")
-                    df = pd.DataFrame(vehicles)
-                    df.to_csv(output_path, index=False)
-                    logger.debug(f"Batch saving successful.")
-                    global_idx += 1
+                    articles_page_source = get_page_source(
+                        driver, url,
+                        min_delay=request_min_delay_seconds,
+                        max_delay=request_min_delay_seconds,
+                        timeout_after=wait_time_seconds,
+                    )
+                    selector = Selector(text=articles_page_source)
+                    listing_urls_xpath = "//div[contains(@class, 'articles')]//div[contains(@class, 'cardd')]//a/@href"
+                    listing_urls = selector.xpath(listing_urls_xpath).getall()
+                    listing_urls = [f"https://olx.ba{url_suffix}" for url_suffix in listing_urls]
+                    random.shuffle(listing_urls)
+                except TimeoutException:
+                    logger.error(f"Error retrieving listings page {url}: Timed out.")
+                except OlxPageNotFound as err:
+                    logger.error(f"Error retrieving listings page {url}: Not found.")
                 except Exception as err:
-                    logger.error(f"Error occurred while saving batch: {err}")
+                    logger.error(f"Unexpected error occurred while scraping listings page {url}: {err}")
+                logger.debug("Listings retrieved successfully.")
+                logger.debug(f"{len(listing_urls)=}")
 
+                if len(listing_urls) > 0:
+                    vehicles = []
+                    pbar = tqdm(listing_urls, desc=f"Processing listings", file=open(os.devnull, 'w'))
+                    for listing_url in pbar:
+                        try:
+                            page_source = get_page_source(
+                                driver, listing_url,
+                                min_delay=request_min_delay_seconds,
+                                max_delay=request_min_delay_seconds,
+                                timeout_after=wait_time_seconds,
+                            )
+                            selector = Selector(text=page_source)
+                            vehicle = parse_vehicle_info(selector)
+                            vehicle["url"] = listing_url
+                            vehicle["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            vehicle["run_id"] = run_id
+                            vehicles.append(vehicle)
+                        except TimeoutException:
+                            logger.error(f"Error retrieving vehicle page {listing_url}: Timed out.")
+                        except OlxPageNotFound as err:
+                            logger.error(f"Error retrieving vehicle page {listing_url}: Not found.")
+                        except Exception as err:
+                            logger.error(f"Unexpected error occurred while scraping vehicle {listing_url}: {err}")
+                        finally:
+                            logger.info(str(pbar))
+                    pbar.close()
+                    logger.debug("All vehicles from the page retrieved successfully.")
+
+                    try:
+                        output_path = output_partfile_template.format(idx=global_idx)
+                        logger.debug(f"Saving batch into `{output_path}` ...")
+                        df = pd.DataFrame(vehicles)
+                        df.to_csv(output_path, index=False)
+                        logger.debug(f"Batch saving successful.")
+                        global_idx += 1
+                    except Exception as err:
+                        logger.error(f"Error occurred while saving batch: {err}")
+
+                try:
+                    next_page = get_next_page(articles_page_source)
+                except Exception as err:
+                    logger.error(f"Error occurred while parsing next page: {err}")
+                    break
+
+    except KeyboardInterrupt:
+        logger.info("Received keyboard interrupt. Shutting down gracefully...")
+    except Exception as e:
+        logger.error(f"Unexpected error occurred: {str(e)}")
+    finally:
+        if driver:
             try:
-                next_page = get_next_page(articles_page_source)
-            except Exception as err:
-                logger.error(f"Error occurred while parsing next page: {err}")
-                break
-
-    driver.quit()
+                driver.quit()
+            except Exception as e:
+                logger.error(f"Error while closing WebDriver: {str(e)}")
