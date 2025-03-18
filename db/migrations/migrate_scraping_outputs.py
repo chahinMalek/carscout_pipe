@@ -1,5 +1,5 @@
-import logging
 import sqlite3
+from logging import INFO
 from pathlib import Path
 
 import numpy as np
@@ -7,9 +7,9 @@ import pandas as pd
 
 from carscout_pipe.attribute_selectors import ATTRIBUTE_SELECTORS, AttributeSelector
 from carscout_pipe.data_models.vehicles.schema import Vehicle
+from carscout_pipe.utils.logging import get_logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__, INFO)
 
 
 def build_dataset(input_dir: str, run_id: str) -> pd.DataFrame:

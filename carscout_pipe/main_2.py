@@ -1,10 +1,9 @@
-import logging
 import os
 import random
 import sqlite3
-import sys
 import time
 from datetime import datetime
+from logging import DEBUG
 from typing import Dict, List
 
 import pandas as pd
@@ -21,13 +20,9 @@ from tqdm import tqdm
 from carscout_pipe.attribute_selectors import ATTRIBUTE_SELECTORS
 from carscout_pipe.data_models.vehicles.schema import Vehicle
 from carscout_pipe.exceptions import OlxPageNotFound
+from carscout_pipe.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-console_handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(name)s - %(asctime)s - %(levelname)s - %(message)s")
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+logger = get_logger(__name__, DEBUG)
 
 
 def init_driver():
@@ -107,6 +102,7 @@ def parse_vehicle_info(driver, url: str) -> Vehicle:
 
 
 def find_vehicles_to_rescrape(run_id: str) -> List[Dict]:
+    # TODO: fix dtypes error when extracting data from the db
     """
     Find all urls that were part of a previous run and were not scraped in the current run.
     Results are required to be still active and not sold at the time of their latest processing.
@@ -157,7 +153,7 @@ def generate_batches(l, n):
 if __name__ == '__main__':
 
     # todo: replace with most recent run_id
-    run_id = 'ae7deaf6-9d1d-4565-bb38-487b5f9cafd8'
+    run_id = 'cc797e69-e715-4913-9b13-eb477f7170f1'
     batch_size = 20
     request_min_delay_seconds = 3
     request_max_delay_seconds = 5

@@ -1,19 +1,21 @@
-import logging
+import random
 import signal
-import sys
+import time
 from contextlib import contextmanager
+from logging import DEBUG
 
+from backoff import on_exception, expo
+from requests import RequestException
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import WebDriverException, TimeoutException
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium_stealth import stealth
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-console_handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(name)s - %(asctime)s - %(levelname)s - %(message)s")
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+from carscout_pipe.exceptions import OlxPageNotFound
+from carscout_pipe.utils.logging import get_logger
+
+logger = get_logger(__name__, log_level=DEBUG)
 
 
 @contextmanager
@@ -77,3 +79,50 @@ def init_driver(timeout_seconds: int = 30) -> webdriver.Chrome:
     except Exception as e:
         logger.error(f"Unexpected error during WebDriver initialization: {str(e)}")
         raise
+
+
+@on_exception(
+    expo,
+    RequestException,
+    max_tries=3,
+    max_time=60,
+    giveup=lambda e: isinstance(e, OlxPageNotFound),
+)
+def get_page_source(
+        driver: webdriver.Chrome,
+        url: str,
+        min_delay: int = 0,
+        max_delay: int = 0,
+        timeout_after: int = 10,
+):
+    """
+    Get the page source using the WebDriver with error handling and backoff.
+    
+    Args:
+        driver: Chrome WebDriver instance
+        url: URL to navigate to
+        min_delay: Minimum delay before request in seconds
+        max_delay: Maximum delay before request in seconds
+        timeout_after: Maximum time to wait for page load in seconds
+        
+    Returns:
+        Page source HTML as string
+        
+    Raises:
+        TimeoutException: If page doesn't load within timeout
+        OlxPageNotFound: If page is not found (404-like response)
+        RequestException: For other request errors
+    """
+    try:
+        request_delay = random.uniform(min_delay, max_delay)
+        time.sleep(request_delay)
+        driver.get(url)
+        WebDriverWait(driver, timeout_after).until(
+            lambda d: d.execute_script("return document.readyState") == "complete"
+        )
+        return driver.page_source
+    except TimeoutException as err:
+        patterns_404 = ["Oprostite, ne možemo pronaći ovu stranicu", "Nema rezultata za traženi pojam"]
+        if any(p in driver.page_source for p in patterns_404):
+            raise OlxPageNotFound(url)  # raise different error to prevent backoff
+        raise err  # re-raise the error to continue backoff

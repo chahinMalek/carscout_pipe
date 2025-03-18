@@ -1,89 +1,21 @@
-import logging
 import os
 import random
 import sys
-import time
 import uuid
 from datetime import datetime
-from typing import Dict
+from logging import DEBUG
 
 import pandas as pd
-from backoff import on_exception, expo
-from requests import RequestException
 from scrapy import Selector
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
-from selenium.webdriver.support.ui import WebDriverWait
 from tqdm import tqdm
 
-from carscout_pipe.attribute_selectors import ATTRIBUTE_SELECTORS
-from carscout_pipe.data_models.vehicles.schema import Vehicle
 from carscout_pipe.exceptions import OlxPageNotFound
-from carscout_pipe.utils.webdriver import init_driver
+from carscout_pipe.utils.logging import get_logger
+from carscout_pipe.utils.scraping import get_next_page, parse_vehicle_info
+from carscout_pipe.utils.webdriver import init_driver, get_page_source
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-console_handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(name)s - %(asctime)s - %(levelname)s - %(message)s")
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
-
-
-@on_exception(
-    expo,
-    RequestException,
-    max_tries=3,
-    max_time=60,
-    giveup=lambda e: isinstance(e, OlxPageNotFound),
-)
-def get_page_source(
-        driver: webdriver.Chrome,
-        url: str,
-        min_delay: int = 0,
-        max_delay: int = 0,
-        timeout_after: int = 10,
-):
-    try:
-        request_delay = random.uniform(min_delay, max_delay)
-        time.sleep(request_delay)
-        driver.get(url)
-        WebDriverWait(driver, timeout_after).until(
-            lambda d: d.execute_script("return document.readyState") == "complete"
-        )
-        return driver.page_source
-    except TimeoutException as err:
-        patterns_404 = ["Oprostite, ne možemo pronaći ovu stranicu", "Nema rezultata za traženi pojam"]
-        if any(p in driver.page_source for p in patterns_404):
-            raise OlxPageNotFound(url) # raise different error to prevent backoff
-        raise err  # re-raise the error to continue backoff
-
-
-def get_next_page(page_source: str):
-    logger.debug("Retrieving next page ...")
-    selector = Selector(text=page_source)
-    pagination_item = selector.xpath("//div[@class='olx-pagination-wrapper']").get()
-    if not pagination_item:
-        logger.debug("No pagination item found")
-        return None
-    next_page_xpath = "normalize-space(//li[@class='active']/following-sibling::li[1]/text())"
-    next_page = Selector(text=pagination_item).xpath(next_page_xpath).get()
-    next_page = next_page or None
-    logger.debug(f"Next page: {next_page}")
-    return next_page
-
-
-def parse_vehicle_info(selector: Selector) -> Dict:
-    params = {}
-    for attribute, s in ATTRIBUTE_SELECTORS.items():
-        value = selector.xpath(s.xpath).get()
-        if s.type == bool:
-            value = True if value else False
-        elif s.type == str and isinstance(value, str):
-            value = value.strip()
-        params[attribute] = value
-    vehicle = Vehicle.from_raw_dict(params)
-    return vehicle.model_dump()
-
+logger = get_logger(__name__, log_level=DEBUG)
 
 if __name__ == '__main__':
 

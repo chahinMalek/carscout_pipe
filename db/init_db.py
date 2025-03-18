@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-import sqlite3
 import argparse
-import logging
+import sqlite3
+from logging import INFO
 from pathlib import Path
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+from carscout_pipe.utils.logging import get_logger
+
+logger = get_logger(__name__, INFO)
 
 
 def init_database(db_path: str) -> None:
