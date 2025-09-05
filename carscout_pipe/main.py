@@ -22,9 +22,9 @@ if __name__ == '__main__':
     # script-level parameters
     # todo: replace with fetching brands from the db
     brands_path = "./data/brands.csv"
-    request_min_delay_seconds = 3
+    request_min_delay_seconds = 1
     request_max_delay_seconds = 5
-    wait_time_seconds = 10
+    wait_time_seconds = 8
 
     # script-level constants
     driver = None

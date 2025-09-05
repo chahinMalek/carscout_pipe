@@ -8,7 +8,7 @@ backoff==2.2.1
 pyarrow==18.1.0
 pymongo==4.10.1
 python-dotenv==1.0.1
-streamlit==1.41.1
 pyyaml==6.0.2
 ruff==0.9.4
 selenium-stealth==1.0.6
+pytest==8.3.5

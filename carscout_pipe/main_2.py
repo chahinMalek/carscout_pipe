@@ -153,11 +153,11 @@ def generate_batches(l, n):
 if __name__ == '__main__':
 
     # todo: replace with most recent run_id
-    run_id = 'cc797e69-e715-4913-9b13-eb477f7170f1'
-    batch_size = 20
-    request_min_delay_seconds = 3
-    request_max_delay_seconds = 5
-    wait_time_seconds = 10
+    run_id = '3c76ff14-e49a-43e4-aa91-bd6f64f4d302'
+    batch_size = 40
+    request_min_delay_seconds = 1
+    request_max_delay_seconds = 4
+    wait_time_seconds = 5
 
     logger.debug(f"{request_min_delay_seconds=}")
     logger.debug(f"{request_max_delay_seconds=}")
@@ -202,6 +202,7 @@ if __name__ == '__main__':
 
             if vehicle:
                 vehicle["run_id"] = run_id
+                vehicle["scraped_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 results.append(vehicle)
 
             logger.info(str(pbar))

@@ -94,9 +94,12 @@ def insert_vehicles_batch(db: sqlite3.Connection, vehicles: list[Vehicle], batch
 
 if __name__ == "__main__":
 
-    # run_id = "64fddb00-4834-4655-827b-1722a00bf908"
+    run_id = "64fddb00-4834-4655-827b-1722a00bf908"
     run_id = "ae7deaf6-9d1d-4565-bb38-487b5f9cafd8"
     run_id = "cc797e69-e715-4913-9b13-eb477f7170f1"
+    run_id = "e4414681-642f-42fa-adff-48931e57a270"
+    run_id = "3e453dd4-199d-467d-9485-eec4c9e78198"
+    run_id = "3c76ff14-e49a-43e4-aa91-bd6f64f4d302"
 
     input_dir = "data/output/"
     db_path = "data/carscout.db"
