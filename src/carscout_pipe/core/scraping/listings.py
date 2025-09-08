@@ -1,5 +1,5 @@
 from logging import DEBUG
-from typing import Iterator
+from typing import Iterator, List
 
 from scrapy import Selector
 from selenium import webdriver
@@ -20,7 +20,7 @@ def extract_listings(
         min_delay: int = 1,
         max_delay: int = 5,
         timeout_after: int = 10,
-) -> Iterator[Listing]:
+) -> Iterator[List[Listing]]:
     """
     Generator that yields a tuple of (page_url, listing_urls) for each page
     of listings for a brand.
@@ -53,9 +53,10 @@ def extract_listings(
                 card_selector = Selector(text=card)
                 listing_url_suffix = card_selector.xpath("//a/@href").get().strip()
                 listing_url = f"https://olx.ba{listing_url_suffix}"
+                listing_id = listing_url.split("/")[-1]
                 title = card_selector.xpath("//a//h1[contains(@class, 'main-heading')]/text()").get().strip()
                 price = card_selector.xpath("//a//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]/text()").get().strip()
-                listings.append(Listing(url=listing_url, title=title, price=price))
+                listings.append(Listing(listing_id=listing_id, url=listing_url, title=title, price=price))
 
             # Yield the current page's data and update for next iteration
             yield listings

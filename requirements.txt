@@ -12,3 +12,5 @@ pyyaml==6.0.2
 ruff==0.9.4
 selenium-stealth==1.0.6
 pytest==8.3.5
+sqlalchemy==2.0.36
+alembic==1.14.0
