@@ -14,7 +14,7 @@ from src.carscout_pipe.infra.logging import get_logger
 logger = get_logger(__name__, log_level=DEBUG)
 
 
-def extract_listings(
+def scrape_listings(
         driver: webdriver.Chrome,
         brand: Brand,
         min_delay: int = 1,

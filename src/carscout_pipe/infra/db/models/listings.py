@@ -1,9 +1,8 @@
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from .base import Base
 
 
 class ListingModel(Base):
@@ -20,4 +19,4 @@ class ListingModel(Base):
     
     # scraping metadata
     scraped_at = Column(DateTime, default=datetime.now(), nullable=False)
-    run_id = Column(String, nullable=True)
+    run_id = Column(String, nullable=False)

@@ -1,3 +1,5 @@
-from .listings import ListingModel, Base
+from .base import Base
+from .listings import ListingModel
+from .vehicles import VehicleModel
 
-__all__ = ["ListingModel", "Base"]
+__all__ = ["Base", "ListingModel", "VehicleModel"]

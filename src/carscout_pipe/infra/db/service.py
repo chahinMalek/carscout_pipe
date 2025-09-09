@@ -1,8 +1,12 @@
 from typing import List, Optional
 
+from sqlalchemy import text
+
 from src.carscout_pipe.core.data_models.listings import Listing
+from src.carscout_pipe.core.data_models.vehicles import Vehicle
 from src.carscout_pipe.infra.db.connection import db_manager
 from src.carscout_pipe.infra.db.repositories import ListingRepository
+from src.carscout_pipe.infra.db.repositories.vehicles_repository import VehicleRepository
 from src.carscout_pipe.infra.logging import get_logger
 
 logger = get_logger(__name__)
@@ -77,7 +81,70 @@ class DatabaseService:
         with self.db_manager.get_session() as session:
             listing_repo = ListingRepository(session)
             return listing_repo.count_listings_by_run_id(run_id)
-
+    
+    # Vehicle operations
+    def store_vehicles(
+        self, 
+        vehicles: List[Vehicle], 
+        run_id: Optional[str] = None
+    ) -> int:
+        """Store vehicles in the database and return count of inserted vehicles."""
+        with self.db_manager.get_session() as session:
+            vehicle_repo = VehicleRepository(session)
+            count = vehicle_repo.store_vehicles(vehicles, run_id)
+            logger.info(f"Stored {count} vehicles in database.")
+            return count
+    
+    def store_vehicle(
+        self, 
+        vehicle: Vehicle, 
+        run_id: Optional[str] = None
+    ) -> bool:
+        """Store a single vehicle in the database."""
+        with self.db_manager.get_session() as session:
+            vehicle_repo = VehicleRepository(session)
+            result = vehicle_repo.create_vehicle(vehicle, run_id)
+            if result:
+                logger.info(f"Stored vehicle for listing_id: {vehicle.listing_id}")
+                return True
+            return False
+    
+    def vehicle_exists_by_listing_id(self, listing_id: str) -> bool:
+        """Check if a vehicle exists for the given listing_id."""
+        with self.db_manager.get_session() as session:
+            vehicle_repo = VehicleRepository(session)
+            return vehicle_repo.vehicle_exists_by_listing_id(listing_id)
+    
+    def vehicle_exists_by_url(self, url: str) -> bool:
+        """Check if a vehicle exists for the given URL."""
+        with self.db_manager.get_session() as session:
+            vehicle_repo = VehicleRepository(session)
+            return vehicle_repo.vehicle_exists_by_url(url)
+    
+    def get_listings_without_vehicles(self, run_id: str) -> List[Listing]:
+        """Get listings that don't have corresponding vehicle records."""
+        with self.db_manager.get_session() as session:
+            query = text("""
+                WITH latest_listings AS (
+                    SELECT
+                        l.listing_id,
+                        l.url,
+                        l.title,
+                        l.price,
+                        l.scraped_at,
+                        ROW_NUMBER() OVER (PARTITION BY l.listing_id ORDER BY l.scraped_at DESC) as rn
+                    FROM listings l 
+                    WHERE l.run_id = :run_id
+                )
+                SELECT ll.listing_id, ll.url, ll.title, ll.price
+                FROM latest_listings ll
+                LEFT JOIN vehicles v ON ll.listing_id = v.listing_id 
+                WHERE ll.rn = 1 AND v.listing_id IS NULL
+            """)
+            result = session.execute(query, {"run_id": run_id})
+            cols = list(result.keys())
+            results = [Listing(**dict(zip(cols, row))) for row in result.fetchall()]
+            return results
 
 # Global database service instance
 db_service = DatabaseService()

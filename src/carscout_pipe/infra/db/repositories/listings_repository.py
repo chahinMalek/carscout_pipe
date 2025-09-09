@@ -13,20 +13,9 @@ class ListingRepository:
     def __init__(self, session: Session):
         self.session = session
     
-    def create_listing(
-        self, 
-        listing: Listing, 
-        run_id: Optional[str] = None
-    ) -> ListingModel:
+    def create_listing(self, listing: Listing,  run_id: str) -> ListingModel:
         """Create a new listing in the database."""
-        listing_model = ListingModel(
-            listing_id=listing.listing_id,
-            url=listing.url,
-            title=listing.title,
-            price=listing.price,
-            run_id=run_id,
-            scraped_at=datetime.now()
-        )
+        listing_model = ListingModel(**{**listing.__dict__, "run_id": run_id})
         self.session.add(listing_model)
         return listing_model
     
