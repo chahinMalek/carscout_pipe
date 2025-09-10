@@ -67,3 +67,39 @@ class VehicleRepository:
         except Exception as e:
             logger.error(f"Failed to get listings without vehicles: {e}")
             return []
+    
+    def get_vehicles_with_null_attributes(self) -> List[VehicleModel]:
+        """Get vehicles that have null brand or model values."""
+        try:
+            vehicles = self.session.query(VehicleModel).filter(
+                (VehicleModel.brand.is_(None)) | (VehicleModel.model.is_(None))
+            ).all()
+            return vehicles
+        except Exception as e:
+            logger.error(f"Failed to get vehicles with null attributes: {e}")
+            return []
+    
+    def update_vehicle(self, listing_id: str, vehicle_data: Vehicle) -> bool:
+        """Update an existing vehicle record."""
+        try:
+            vehicle_model = self.get_vehicle_by_listing_id(listing_id)
+            if not vehicle_model:
+                logger.error(f"Vehicle with listing_id {listing_id} not found")
+                return False
+            
+            # Update all attributes from the vehicle data
+            for attr, value in vehicle_data.__dict__.items():
+                if hasattr(vehicle_model, attr):
+                    setattr(vehicle_model, attr, value)
+            
+            # Update the scraped_at timestamp
+            vehicle_model.scraped_at = datetime.now()
+            
+            self.session.commit()
+            logger.info(f"Updated vehicle for listing_id: {listing_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to update vehicle {listing_id}: {e}")
+            self.session.rollback()
+            return False

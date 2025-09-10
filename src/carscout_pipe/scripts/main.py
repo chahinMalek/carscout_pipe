@@ -16,7 +16,6 @@ logger = get_logger(__name__)
 
 BRANDS_CSV_PATH = "data/seeds/brands.csv"
 RUN_ID = str(uuid.uuid4())
-RUN_ID = "edf0846c-2d85-406d-876e-cdc7a72c712a"
 
 
 def load_brands() -> List[Brand]:
@@ -122,8 +121,8 @@ def main() -> None:
     logger.info("Initializing database...")
     db_service.initialize_database()
 
-    # logger.info(f"Step 1/2: Start listings extraction...")
-    # extract_listings()
+    logger.info(f"Step 1/2: Start listings extraction...")
+    extract_listings()
 
     logger.info(f"Step 2/2: Start vehicle information extraction...")
     extract_vehicles()

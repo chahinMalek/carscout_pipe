@@ -125,7 +125,7 @@ class DatabaseService:
         """Get listings that don't have corresponding vehicle records."""
         with self.db_manager.get_session() as session:
             query = text("""
-                WITH latest_listings AS (
+                WITH run_listings AS (
                     SELECT
                         l.listing_id,
                         l.url,
@@ -136,15 +136,38 @@ class DatabaseService:
                     FROM listings l 
                     WHERE l.run_id = :run_id
                 )
-                SELECT ll.listing_id, ll.url, ll.title, ll.price
-                FROM latest_listings ll
-                LEFT JOIN vehicles v ON ll.listing_id = v.listing_id 
-                WHERE ll.rn = 1 AND v.listing_id IS NULL
+                SELECT rl.listing_id, rl.url, rl.title, rl.price
+                FROM run_listings rl
+                LEFT JOIN vehicles v ON rl.listing_id = v.listing_id 
+                WHERE rl.rn = 1 AND v.listing_id IS NULL
             """)
             result = session.execute(query, {"run_id": run_id})
             cols = list(result.keys())
             results = [Listing(**dict(zip(cols, row))) for row in result.fetchall()]
             return results
+
+    def get_vehicles_with_null_attributes(self) -> List[dict]:
+        """Get vehicles that have null brand or model values."""
+        with self.db_manager.get_session() as session:
+            vehicle_repo = VehicleRepository(session)
+            vehicles = vehicle_repo.get_vehicles_with_null_attributes()
+            return [
+                {
+                    "listing_id": vehicle.listing_id,
+                    "url": vehicle.url,
+                    "title": vehicle.title,
+                    "price": vehicle.price,
+                    "brand": vehicle.brand,
+                    "model": vehicle.model
+                }
+                for vehicle in vehicles
+            ]
+    
+    def update_vehicle(self, listing_id: str, vehicle: Vehicle) -> bool:
+        """Update an existing vehicle record."""
+        with self.db_manager.get_session() as session:
+            vehicle_repo = VehicleRepository(session)
+            return vehicle_repo.update_vehicle(listing_id, vehicle)
 
 # Global database service instance
 db_service = DatabaseService()

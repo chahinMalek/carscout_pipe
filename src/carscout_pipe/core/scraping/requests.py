@@ -15,6 +15,13 @@ from src.carscout_pipe.infra.logging import get_logger
 
 logger = get_logger(__name__, log_level=INFO)
 
+
+def check_if_page_exists(page_source: str) -> bool:
+    patterns_404 = ["Oprostite, ne možemo pronaći ovu stranicu", "Nema rezultata za traženi pojam"]
+    page_not_exists = any(p in page_source for p in patterns_404)
+    return page_not_exists
+
+
 @on_exception(
     expo,
     RequestException,
@@ -54,11 +61,12 @@ def get_page_source(
         WebDriverWait(driver, timeout_after).until(
             lambda d: d.execute_script("return document.readyState") == "complete"
         )
+        if check_if_page_exists(driver.page_source):
+            raise OlxPageNotFound(url)
         return driver.page_source
     except TimeoutException as err:
-        patterns_404 = ["Oprostite, ne možemo pronaći ovu stranicu", "Nema rezultata za traženi pojam"]
-        if any(p in driver.page_source for p in patterns_404):
-            raise OlxPageNotFound(url)  # raise different error to prevent backoff
+        if check_if_page_exists(driver.page_source):
+            raise OlxPageNotFound(url)
         raise err  # re-raise the error to continue backoff
 
 
