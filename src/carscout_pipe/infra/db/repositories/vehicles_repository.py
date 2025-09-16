@@ -68,12 +68,16 @@ class VehicleRepository:
             logger.error(f"Failed to get listings without vehicles: {e}")
             return []
     
-    def get_vehicles_with_null_attributes(self) -> List[VehicleModel]:
+    def get_vehicles_with_null_attributes(self, keep_after: Optional[datetime] = None) -> List[VehicleModel]:
         """Get vehicles that have null brand or model values."""
         try:
             vehicles = self.session.query(VehicleModel).filter(
                 (VehicleModel.brand.is_(None)) | (VehicleModel.model.is_(None))
             ).all()
+            vehicles = [v for v in vehicles if v.scraped_at is not None]
+            vehicles = sorted(vehicles, key=lambda v: v.scraped_at, reverse=True)
+            if keep_after:
+                vehicles = [v for v in vehicles if v.scraped_at >= keep_after]
             return vehicles
         except Exception as e:
             logger.error(f"Failed to get vehicles with null attributes: {e}")

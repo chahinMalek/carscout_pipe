@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import text
@@ -146,11 +147,11 @@ class DatabaseService:
             results = [Listing(**dict(zip(cols, row))) for row in result.fetchall()]
             return results
 
-    def get_vehicles_with_null_attributes(self) -> List[dict]:
+    def get_vehicles_with_null_attributes(self, keep_after: Optional[datetime] = None) -> List[dict]:
         """Get vehicles that have null brand or model values."""
         with self.db_manager.get_session() as session:
             vehicle_repo = VehicleRepository(session)
-            vehicles = vehicle_repo.get_vehicles_with_null_attributes()
+            vehicles = vehicle_repo.get_vehicles_with_null_attributes(keep_after=keep_after)
             return [
                 {
                     "listing_id": vehicle.listing_id,

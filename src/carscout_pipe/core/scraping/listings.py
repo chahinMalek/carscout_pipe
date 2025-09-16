@@ -45,17 +45,17 @@ def scrape_listings(
             )
 
             selector = Selector(text=articles_page_source)
-            listings_xpath = "//div[contains(@class, 'articles')]//div[contains(@class, 'cardd')]"
+            listings_xpath = "//a[starts-with(@href, '/artikal/')]"
             listing_cards = selector.xpath(listings_xpath).getall()
             listings = []
 
             for card in listing_cards:
                 card_selector = Selector(text=card)
-                listing_url_suffix = card_selector.xpath("//a/@href").get().strip()
+                listing_url_suffix = card_selector.xpath("//@href").get().strip()
                 listing_url = f"https://olx.ba{listing_url_suffix}"
                 listing_id = listing_url.split("/")[-1]
-                title = card_selector.xpath("//a//h1[contains(@class, 'main-heading')]/text()").get().strip()
-                price = card_selector.xpath("//a//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]/text()").get().strip()
+                title = card_selector.xpath("//h1[contains(@class, 'main-heading')]/text()").get().strip()
+                price = card_selector.xpath("//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]/text()").get().strip()
                 listings.append(Listing(listing_id=listing_id, url=listing_url, title=title, price=price))
 
             # Yield the current page's data and update for next iteration

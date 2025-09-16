@@ -1,3 +1,4 @@
+import datetime
 import time
 import uuid
 from datetime import timedelta
@@ -20,12 +21,15 @@ def postprocess_vehicles_with_null_attributes():
     driver = None
     errors = False
 
+    today = datetime.datetime.now()
+    keep_after = today - timedelta(days=3)
+
     try:
         logger.info(f"Starting postprocessing run: {RUN_ID}")
         logger.info("Identifying vehicles with null attributes (brand or model)...")
         
         # Get vehicles with null brand or model
-        vehicles_with_nulls = db_service.get_vehicles_with_null_attributes()
+        vehicles_with_nulls = db_service.get_vehicles_with_null_attributes(keep_after=keep_after)
         total_vehicles = len(vehicles_with_nulls)
         
         if total_vehicles == 0:
@@ -51,7 +55,7 @@ def postprocess_vehicles_with_null_attributes():
                 )
                 
                 # Extract updated vehicle details
-                updated_vehicle = extract_vehicle_details(driver, listing, min_delay=3, max_delay=5)
+                updated_vehicle = extract_vehicle_details(driver, listing, min_delay=2, max_delay=4)
                 
                 if updated_vehicle:
                     # Update the vehicle in the database
