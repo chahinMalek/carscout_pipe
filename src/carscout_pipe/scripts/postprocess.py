@@ -2,10 +2,9 @@ import datetime
 import time
 import uuid
 from datetime import timedelta
-from typing import List
 
+from src.carscout_pipe.core.api_requests.vehicles import extract_vehicle_details, init_request_session
 from src.carscout_pipe.core.data_models.listings import Listing
-from src.carscout_pipe.core.scraping.vehicles import extract_vehicle_details
 from src.carscout_pipe.core.scraping.webdriver import init_driver
 from src.carscout_pipe.infra.db.service import db_service
 from src.carscout_pipe.infra.logging import get_logger
@@ -13,6 +12,10 @@ from src.carscout_pipe.infra.logging import get_logger
 logger = get_logger(__name__)
 
 RUN_ID = str(uuid.uuid4())
+LOOKBACK_DAYS = 5
+REINIT_SESSION_EVERY = 500
+MIN_REQUEST_DELAY_SECS = 0.5
+MAX_REQUEST_DELAY_SECS = 2
 
 
 def postprocess_vehicles_with_null_attributes():
@@ -22,7 +25,7 @@ def postprocess_vehicles_with_null_attributes():
     errors = False
 
     today = datetime.datetime.now()
-    keep_after = today - timedelta(days=3)
+    keep_after = today - timedelta(days=LOOKBACK_DAYS)
 
     try:
         logger.info(f"Starting postprocessing run: {RUN_ID}")
@@ -38,11 +41,15 @@ def postprocess_vehicles_with_null_attributes():
 
         logger.info(f"Found {total_vehicles} vehicles with null attributes. Starting rescraping...")
         driver = init_driver()
+        session = init_request_session(driver)
         
         updated_count = 0
         failed_count = 0
         
-        for i, vehicle_data in enumerate(vehicles_with_nulls, 1):
+        for i, vehicle_data in enumerate(vehicles_with_nulls, start=1):
+            if i % REINIT_SESSION_EVERY == 0:
+                session = init_request_session(driver)
+
             try:
                 logger.info(f"Processing vehicle {i}/{total_vehicles}: {vehicle_data['url']}")
                 
@@ -55,7 +62,12 @@ def postprocess_vehicles_with_null_attributes():
                 )
                 
                 # Extract updated vehicle details
-                updated_vehicle = extract_vehicle_details(driver, listing, min_delay=2, max_delay=4)
+                updated_vehicle = extract_vehicle_details(
+                    session=session,
+                    listing=listing,
+                    min_delay=MIN_REQUEST_DELAY_SECS,
+                    max_delay=MIN_REQUEST_DELAY_SECS,
+                )
                 
                 if updated_vehicle:
                     # Update the vehicle in the database

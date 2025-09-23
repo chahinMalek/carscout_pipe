@@ -5,9 +5,9 @@ from typing import List
 
 import pandas as pd
 
+from src.carscout_pipe.core.api_requests.vehicles import extract_vehicle_details, init_request_session
 from src.carscout_pipe.core.data_models.brands import Brand
 from src.carscout_pipe.core.scraping.listings import scrape_listings
-from src.carscout_pipe.core.scraping.vehicles import extract_vehicle_details
 from src.carscout_pipe.core.scraping.webdriver import init_driver
 from src.carscout_pipe.infra.db.service import db_service
 from src.carscout_pipe.infra.logging import get_logger
@@ -16,6 +16,9 @@ logger = get_logger(__name__)
 
 BRANDS_CSV_PATH = "data/seeds/brands.csv"
 RUN_ID = str(uuid.uuid4())
+REINIT_SESSION_EVERY = 500
+MIN_REQUEST_DELAY_SECS = 0.5
+MAX_REQUEST_DELAY_SECS = 2
 
 
 def load_brands() -> List[Brand]:
@@ -80,11 +83,19 @@ def extract_vehicles():
 
         logger.info(f"Found {total_listings} new listings. Resuming vehicle information extraction.")
         driver = init_driver()
+        session = init_request_session(driver)
         
-        for i, listing in enumerate(new_listings, 1):
+        for i, listing in enumerate(new_listings, start=1):
+            if i % REINIT_SESSION_EVERY == 0:
+                session = init_request_session(driver)
             try:
                 logger.info(f"Extracting vehicle details for listing {i}/{total_listings}: {listing.url}")
-                vehicle = extract_vehicle_details(driver, listing, min_delay=2, max_delay=4)
+                vehicle = extract_vehicle_details(
+                    session=session,
+                    listing=listing,
+                    min_delay=MIN_REQUEST_DELAY_SECS,
+                    max_delay=MAX_REQUEST_DELAY_SECS,
+                )
                 if vehicle:
                     success = db_service.store_vehicle(vehicle, run_id=RUN_ID)
                     if not success:
