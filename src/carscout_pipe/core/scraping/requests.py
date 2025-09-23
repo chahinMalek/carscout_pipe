@@ -17,7 +17,10 @@ logger = get_logger(__name__, log_level=INFO)
 
 
 def check_if_page_exists(page_source: str) -> bool:
-    patterns_404 = ["Oprostite, ne možemo pronaći ovu stranicu", "Nema rezultata za traženi pojam"]
+    patterns_404 = [
+        "Oprostite, ne možemo pronaći ovu stranicu",
+        "Nema rezultata za traženi pojam",
+    ]
     page_not_exists = any(p in page_source for p in patterns_404)
     return page_not_exists
 
@@ -30,11 +33,11 @@ def check_if_page_exists(page_source: str) -> bool:
     giveup=lambda e: isinstance(e, OlxPageNotFound),
 )
 def get_page_source(
-        driver: webdriver.Chrome,
-        url: str,
-        min_delay: int = 0,
-        max_delay: int = 0,
-        timeout_after: int = 10,
+    driver: webdriver.Chrome,
+    url: str,
+    min_delay: int = 0,
+    max_delay: int = 0,
+    timeout_after: int = 10,
 ):
     """
     Get the page source using the WebDriver with error handling and backoff.
@@ -86,7 +89,9 @@ def get_next_page(page_source: str) -> Optional[str]:
     if not pagination_item:
         logger.debug("No pagination item found")
         return None
-    next_page_xpath = "normalize-space(//li[@class='active']/following-sibling::li[1]/text())"
+    next_page_xpath = (
+        "normalize-space(//li[@class='active']/following-sibling::li[1]/text())"
+    )
     next_page = Selector(text=pagination_item).xpath(next_page_xpath).get()
     next_page = next_page or None
     logger.debug(f"Next page: {next_page}")

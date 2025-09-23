@@ -34,10 +34,10 @@ def init_request_session(driver: webdriver.Chrome) -> requests.Session:
 
 
 def extract_vehicle_details(
-        session: requests.Session,
-        listing: Listing,
-        min_delay: float = 1,
-        max_delay: float = 5,
+    session: requests.Session,
+    listing: Listing,
+    min_delay: float = 1,
+    max_delay: float = 5,
 ):
     request_delay = random.uniform(min_delay, max_delay)
     time.sleep(request_delay)
@@ -57,7 +57,9 @@ def parse_vehicle_info(vehicle_data: dict) -> Dict:
         "brand": (vehicle_data.get("brand") or {}).get("name"),
         "model": (vehicle_data.get("model") or {}).get("name"),
         "state": vehicle_data.get("state"),
-        "location": (first(vehicle_data.get("cities") or [], default=None) or {}).get("name"),
+        "location": (first(vehicle_data.get("cities") or [], default=None) or {}).get(
+            "name"
+        ),
         "image_url": first(vehicle_data.get("images") or [], default=None),
         "fuel_type": get_attribute_value(attributes.get("Gorivo") or {}),
         "build_year": get_attribute_value(attributes.get("Godište") or {}),
@@ -74,7 +76,9 @@ def parse_vehicle_info(vehicle_data: dict) -> Dict:
         "parking_sensors": get_attribute_value(attributes.get("Parking senzori") or {}),
         "parking_camera": get_attribute_value(attributes.get("Parking kamera") or {}),
         "drivetrain": get_attribute_value(attributes.get("Pogon") or {}),
-        "year_first_registered": get_attribute_value(attributes.get("Godina prve registracije") or {}),
+        "year_first_registered": get_attribute_value(
+            attributes.get("Godina prve registracije") or {}
+        ),
         "registered_until": get_attribute_value(attributes.get("Registrovan do") or {}),
         "color": get_attribute_value(attributes.get("Boja") or {}),
         "gears": get_attribute_value(attributes.get("Broj stepeni prijenosa") or {}),
@@ -87,40 +91,64 @@ def parse_vehicle_info(vehicle_data: dict) -> Dict:
         "rim_size": get_attribute_value(attributes.get("Veličina felgi") or {}),
         "warranty": get_attribute_value(attributes.get("Garancija") or {}),
         "security": get_attribute_value(attributes.get("Zaštita/Blokada") or {}),
-        "previous_owners": get_attribute_value(attributes.get("Broj prethodnih vlasnika") or {}),
+        "previous_owners": get_attribute_value(
+            attributes.get("Broj prethodnih vlasnika") or {}
+        ),
         "published_at": get_attribute_value(attributes.get("Datum objave") or {}),
         "registered": get_attribute_value(attributes.get("Registrovan") or {}),
         "metallic": get_attribute_value(attributes.get("Metalik") or {}),
         "alloy_wheels": get_attribute_value(attributes.get("Alu felge") or {}),
-        "digital_air_conditioning": get_attribute_value(attributes.get("Digitalna klima") or {}),
-        "steering_wheel_controls": get_attribute_value(attributes.get("Komande na volanu") or {}),
+        "digital_air_conditioning": get_attribute_value(
+            attributes.get("Digitalna klima") or {}
+        ),
+        "steering_wheel_controls": get_attribute_value(
+            attributes.get("Komande na volanu") or {}
+        ),
         "navigation": get_attribute_value(attributes.get("Navigacija") or {}),
-        "touch_screen": get_attribute_value(attributes.get("Touch screen (ekran)") or {}),
-        "heads_up_display": get_attribute_value(attributes.get("Head up display") or {}),
+        "touch_screen": get_attribute_value(
+            attributes.get("Touch screen (ekran)") or {}
+        ),
+        "heads_up_display": get_attribute_value(
+            attributes.get("Head up display") or {}
+        ),
         "usb_port": get_attribute_value(attributes.get("USB port") or {}),
         "cruise_control": get_attribute_value(attributes.get("Tempomat") or {}),
         "bluetooth": get_attribute_value(attributes.get("Bluetooth") or {}),
         "car_play": get_attribute_value(attributes.get("Car play") or {}),
         "rain_sensor": get_attribute_value(attributes.get("Senzor kiše") or {}),
         "park_assist": get_attribute_value(attributes.get("Park assist") or {}),
-        "automatic_light_sensor": get_attribute_value(attributes.get("Senzor auto. svjetla") or {}),
-        "blind_spot_sensor": get_attribute_value(attributes.get("Senzor mrtvog ugla") or {}),
-        "start_stop_system": get_attribute_value(attributes.get("Start-Stop sistem") or {}),
+        "automatic_light_sensor": get_attribute_value(
+            attributes.get("Senzor auto. svjetla") or {}
+        ),
+        "blind_spot_sensor": get_attribute_value(
+            attributes.get("Senzor mrtvog ugla") or {}
+        ),
+        "start_stop_system": get_attribute_value(
+            attributes.get("Start-Stop sistem") or {}
+        ),
         "hill_assist": get_attribute_value(attributes.get("Hill assist") or {}),
         "seat_memory": get_attribute_value(attributes.get("Memorija sjedišta") or {}),
         "seat_massage": get_attribute_value(attributes.get("Masaža sjedišta") or {}),
         "seat_heating": get_attribute_value(attributes.get("Grijanje sjedišta") or {}),
         "seat_cooling": get_attribute_value(attributes.get("Hlađenje sjedišta") or {}),
-        "electric_windows": get_attribute_value(attributes.get("El. podizači stakala") or {}),
-        "electric_seat_adjustment": get_attribute_value(attributes.get("El. pomjeranje sjedišta") or {}),
+        "electric_windows": get_attribute_value(
+            attributes.get("El. podizači stakala") or {}
+        ),
+        "electric_seat_adjustment": get_attribute_value(
+            attributes.get("El. pomjeranje sjedišta") or {}
+        ),
         "armrest": get_attribute_value(attributes.get("Naslon za ruku") or {}),
         "panoramic_roof": get_attribute_value(attributes.get("Panorama krov") or {}),
         "sunroof": get_attribute_value(attributes.get("Šiber") or {}),
         "fog_lights": get_attribute_value(attributes.get("Maglenke") or {}),
-        "electric_mirrors": get_attribute_value(attributes.get("Električni retrovizori") or {}),
+        "electric_mirrors": get_attribute_value(
+            attributes.get("Električni retrovizori") or {}
+        ),
         "alarm": get_attribute_value(attributes.get("Alarm") or {}),
         "central_lock": get_attribute_value(attributes.get("Centralna brava") or {}),
-        "remote_unlock": get_attribute_value(attributes.get("Daljinsko otključavanje") or {}),
+        "remote_unlock": get_attribute_value(
+            attributes.get("Daljinsko otključavanje") or {}
+        ),
         "airbag": get_attribute_value(attributes.get("Airbag") or {}),
         "abs": get_attribute_value(attributes.get("ABS") or {}),
         "electronic_stability": get_attribute_value(attributes.get("ESP") or {}),
@@ -130,11 +158,15 @@ def parse_vehicle_info(vehicle_data: dict) -> Dict:
         "isofix": get_attribute_value(attributes.get("ISOFIX") or {}),
         "tow_hook": get_attribute_value(attributes.get("Auto kuka") or {}),
         "customs_cleared": get_attribute_value(attributes.get("Ocarinjen") or {}),
-        "foreign_license_plates": get_attribute_value(attributes.get("Strane tablice") or {}),
+        "foreign_license_plates": get_attribute_value(
+            attributes.get("Strane tablice") or {}
+        ),
         "on_lease": get_attribute_value(attributes.get("Na lizingu") or {}),
         "service_history": get_attribute_value(attributes.get("Servisna knjiga") or {}),
         "damaged": get_attribute_value(attributes.get("Udaren") or {}),
-        "disabled_accessible": get_attribute_value(attributes.get("Prilagođen invalidima") or {}),
+        "disabled_accessible": get_attribute_value(
+            attributes.get("Prilagođen invalidima") or {}
+        ),
         "oldtimer": get_attribute_value(attributes.get("Oldtimer") or {}),
     }
 

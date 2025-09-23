@@ -5,7 +5,7 @@ from typing import Optional
 @dataclass(frozen=True)
 class Vehicle:
     """Vehicle data model containing all scraped vehicle attributes."""
-    
+
     # Listing fields
     listing_id: str
     url: str
@@ -25,7 +25,7 @@ class Vehicle:
     num_doors: Optional[str] = None
     transmission: Optional[str] = None
     image_url: Optional[str] = None
-    
+
     # Extended vehicle details
     horsepower: Optional[str] = None
     weight_kg: Optional[str] = None
@@ -50,7 +50,7 @@ class Vehicle:
     security: Optional[str] = None
     previous_owners: Optional[str] = None
     published_at: Optional[str] = None
-    
+
     # Boolean features
     # sold: Optional[bool] = None
     registered: Optional[bool] = None

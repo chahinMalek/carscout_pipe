@@ -5,7 +5,10 @@ from typing import List
 
 import pandas as pd
 
-from src.carscout_pipe.core.api_requests.vehicles import extract_vehicle_details, init_request_session
+from src.carscout_pipe.core.api_requests.vehicles import (
+    extract_vehicle_details,
+    init_request_session,
+)
 from src.carscout_pipe.core.data_models.brands import Brand
 from src.carscout_pipe.core.scraping.listings import scrape_listings
 from src.carscout_pipe.core.scraping.webdriver import init_driver
@@ -33,7 +36,7 @@ def extract_listings():
     errors = False
 
     try:
-        logger.info(f"Loading brands from seed file...")
+        logger.info("Loading brands from seed file...")
         brands = load_brands()
         num_brands = len(brands)
 
@@ -41,12 +44,16 @@ def extract_listings():
         driver = init_driver()
 
         for brand_num, brand in enumerate(brands, start=1):
-            logger.info(f"Scraping listings for brand: '{brand.name}' ({brand_num}/{num_brands}) ...")
+            logger.info(
+                f"Scraping listings for brand: '{brand.name}' ({brand_num}/{num_brands}) ..."
+            )
             try:
                 listings_generator = scrape_listings(driver, brand)
                 for listings in listings_generator:
                     num_inserted = db_service.store_listings(listings, run_id=RUN_ID)
-                    logger.info(f"Found {num_inserted} listings for brand: '{brand.name}' ({brand_num}/{num_brands}) ...")
+                    logger.info(
+                        f"Found {num_inserted} listings for brand: '{brand.name}' ({brand_num}/{num_brands}) ..."
+                    )
             except Exception as e:
                 logger.error(f"Error scraping brand '{brand.name}': {e}")
                 errors = True
@@ -73,23 +80,29 @@ def extract_vehicles():
     errors = False
 
     try:
-        logger.info(f"Identifying new listings...")
+        logger.info("Identifying new listings...")
         new_listings = db_service.get_listings_without_vehicles(RUN_ID)
         total_listings = len(new_listings)
-        
+
         if total_listings == 0:
-            logger.info("No new listings found. Skipping vehicle information extraction.")
+            logger.info(
+                "No new listings found. Skipping vehicle information extraction."
+            )
             return
 
-        logger.info(f"Found {total_listings} new listings. Resuming vehicle information extraction.")
+        logger.info(
+            f"Found {total_listings} new listings. Resuming vehicle information extraction."
+        )
         driver = init_driver()
         session = init_request_session(driver)
-        
+
         for i, listing in enumerate(new_listings, start=1):
             if i % REINIT_SESSION_EVERY == 0:
                 session = init_request_session(driver)
             try:
-                logger.info(f"Extracting vehicle details for listing {i}/{total_listings}: {listing.url}")
+                logger.info(
+                    f"Extracting vehicle details for listing {i}/{total_listings}: {listing.url}"
+                )
                 vehicle = extract_vehicle_details(
                     session=session,
                     listing=listing,
@@ -99,22 +112,26 @@ def extract_vehicles():
                 if vehicle:
                     success = db_service.store_vehicle(vehicle, run_id=RUN_ID)
                     if not success:
-                        logger.error(f"Failed to store vehicle details for listing: {listing.url}")
+                        logger.error(
+                            f"Failed to store vehicle details for listing: {listing.url}"
+                        )
                         errors = True
                 else:
-                    logger.warning(f"Failed to extract vehicle details for listing: {listing.url}")
+                    logger.warning(
+                        f"Failed to extract vehicle details for listing: {listing.url}"
+                    )
                     errors = True
-                    
+
             except Exception as e:
                 logger.error(f"Error processing listing {listing.url}: {e}")
                 errors = True
 
-        logger.info(f"Vehicle extraction completed.")
-        
+        logger.info("Vehicle extraction completed.")
+
     except Exception as e:
         logger.error(f"Unexpected error during vehicle information extraction: {e}")
         errors = True
-        
+
     finally:
         if driver:
             driver.quit()
@@ -132,15 +149,14 @@ def main() -> None:
     logger.info("Initializing database...")
     db_service.initialize_database()
 
-    logger.info(f"Step 1/2: Start listings extraction...")
+    logger.info("Step 1/2: Start listings extraction...")
     extract_listings()
 
-    logger.info(f"Step 2/2: Start vehicle information extraction...")
+    logger.info("Step 2/2: Start vehicle information extraction...")
     extract_vehicles()
 
     logger.info("Process completed.")
-    
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -10,7 +10,7 @@ class VehicleModel(Base):
 
     # Primary key
     id = Column(Integer, primary_key=True, autoincrement=True)
-    
+
     # Linking fields (for connecting to listings)
     listing_id = Column(String, nullable=False, unique=True, index=True)
     url = Column(Text, nullable=False)
@@ -33,7 +33,7 @@ class VehicleModel(Base):
     num_doors = Column(String, nullable=True)
     transmission = Column(String, nullable=True)
     image_url = Column(Text, nullable=True)
-    
+
     # Extended vehicle details
     horsepower = Column(String, nullable=True)
     weight_kg = Column(String, nullable=True)
@@ -58,7 +58,7 @@ class VehicleModel(Base):
     security = Column(String, nullable=True)
     previous_owners = Column(String, nullable=True)
     published_at = Column(String, nullable=True)
-    
+
     # Boolean features
     # sold = Column(Boolean, nullable=True)
     registered = Column(Boolean, nullable=True)
@@ -108,7 +108,7 @@ class VehicleModel(Base):
     damaged = Column(Boolean, nullable=True)
     disabled_accessible = Column(Boolean, nullable=True)
     oldtimer = Column(Boolean, nullable=True)
-    
+
     # Metadata
     scraped_at = Column(DateTime, default=datetime.now(), nullable=False)
     run_id = Column(String, nullable=False)

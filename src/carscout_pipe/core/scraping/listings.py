@@ -15,11 +15,11 @@ logger = get_logger(__name__, log_level=DEBUG)
 
 
 def scrape_listings(
-        driver: webdriver.Chrome,
-        brand: Brand,
-        min_delay: int = 1,
-        max_delay: int = 5,
-        timeout_after: int = 10,
+    driver: webdriver.Chrome,
+    brand: Brand,
+    min_delay: int = 1,
+    max_delay: int = 5,
+    timeout_after: int = 10,
 ) -> Iterator[List[Listing]]:
     """
     Generator that yields a tuple of (page_url, listing_urls) for each page
@@ -54,9 +54,23 @@ def scrape_listings(
                 listing_url_suffix = card_selector.xpath("//@href").get().strip()
                 listing_url = f"https://olx.ba{listing_url_suffix}"
                 listing_id = listing_url.split("/")[-1]
-                title = card_selector.xpath("//h1[contains(@class, 'main-heading')]/text()").get().strip()
-                price = card_selector.xpath("//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]/text()").get().strip()
-                listings.append(Listing(listing_id=listing_id, url=listing_url, title=title, price=price))
+                title = (
+                    card_selector.xpath("//h1[contains(@class, 'main-heading')]/text()")
+                    .get()
+                    .strip()
+                )
+                price = (
+                    card_selector.xpath(
+                        "//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]/text()"
+                    )
+                    .get()
+                    .strip()
+                )
+                listings.append(
+                    Listing(
+                        listing_id=listing_id, url=listing_url, title=title, price=price
+                    )
+                )
 
             # Yield the current page's data and update for next iteration
             yield listings
@@ -71,5 +85,7 @@ def scrape_listings(
             logger.error(f"Error retrieving listings page {url}: Not found.")
             break
         except Exception as err:
-            logger.error(f"Unexpected error occurred while scraping listings page {url}: {err}")
+            logger.error(
+                f"Unexpected error occurred while scraping listings page {url}: {err}"
+            )
             break

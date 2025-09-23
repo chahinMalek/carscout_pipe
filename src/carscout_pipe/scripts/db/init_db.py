@@ -34,18 +34,16 @@ def reset_database():
 def main():
     parser = argparse.ArgumentParser(description="Initialize CarScout database")
     parser.add_argument(
-        "--reset", 
-        action="store_true", 
-        help="Drop and recreate all tables"
+        "--reset", action="store_true", help="Drop and recreate all tables"
     )
-    
+
     args = parser.parse_args()
-    
+
     if args.reset:
         reset_database()
     else:
         init_database()
-    
+
     logger.info("Database setup completed successfully.")
 
 

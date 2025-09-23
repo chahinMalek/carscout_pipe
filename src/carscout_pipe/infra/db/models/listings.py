@@ -8,7 +8,7 @@ from .base import Base
 class ListingModel(Base):
     __tablename__ = "listings"
 
-    # primary key    
+    # primary key
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     # fields related to the actual listing
@@ -16,7 +16,7 @@ class ListingModel(Base):
     url = Column(String, nullable=False)
     title = Column(String, nullable=False)
     price = Column(String, nullable=True)
-    
+
     # scraping metadata
     scraped_at = Column(DateTime, default=datetime.now(), nullable=False)
     run_id = Column(String, nullable=False)

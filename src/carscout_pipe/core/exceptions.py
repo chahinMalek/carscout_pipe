@@ -1,4 +1,3 @@
-
 class OlxPageNotFound(Exception):
     """Exception raised for vehicle page not found."""
 

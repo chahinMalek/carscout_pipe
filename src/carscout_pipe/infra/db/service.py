@@ -7,7 +7,9 @@ from src.carscout_pipe.core.data_models.listings import Listing
 from src.carscout_pipe.core.data_models.vehicles import Vehicle
 from src.carscout_pipe.infra.db.connection import db_manager
 from src.carscout_pipe.infra.db.repositories import ListingRepository
-from src.carscout_pipe.infra.db.repositories.vehicles_repository import VehicleRepository
+from src.carscout_pipe.infra.db.repositories.vehicles_repository import (
+    VehicleRepository,
+)
 from src.carscout_pipe.infra.logging import get_logger
 
 logger = get_logger(__name__)
@@ -15,20 +17,18 @@ logger = get_logger(__name__)
 
 class DatabaseService:
     """Service layer for database operations."""
-    
+
     def __init__(self):
         self.db_manager = db_manager
-    
+
     def initialize_database(self):
         """Initialize the database by creating all tables."""
         logger.info("Initializing database tables...")
         self.db_manager.create_tables()
         logger.info("Database tables created successfully.")
-    
+
     def store_listings(
-        self, 
-        listings: List[Listing], 
-        run_id: Optional[str] = None
+        self, listings: List[Listing], run_id: Optional[str] = None
     ) -> int:
         """Store listings in the database and return count of inserted listings."""
         with self.db_manager.get_session() as session:
@@ -36,12 +36,8 @@ class DatabaseService:
             count = listing_repo.bulk_create_listings(listings, run_id)
             logger.info(f"Stored {count} listings in database.")
             return count
-    
-    def store_vehicle(
-        self, 
-        vehicle: Vehicle, 
-        run_id: Optional[str] = None
-    ) -> bool:
+
+    def store_vehicle(self, vehicle: Vehicle, run_id: Optional[str] = None) -> bool:
         """Store a single vehicle in the database."""
         with self.db_manager.get_session() as session:
             vehicle_repo = VehicleRepository(session)
@@ -76,11 +72,15 @@ class DatabaseService:
             results = [Listing(**dict(zip(cols, row))) for row in result.fetchall()]
             return results
 
-    def get_vehicles_with_null_attributes(self, keep_after: Optional[datetime] = None) -> List[dict]:
+    def get_vehicles_with_null_attributes(
+        self, keep_after: Optional[datetime] = None
+    ) -> List[dict]:
         """Get vehicles that have null brand or model values."""
         with self.db_manager.get_session() as session:
             vehicle_repo = VehicleRepository(session)
-            vehicles = vehicle_repo.get_vehicles_with_null_attributes(keep_after=keep_after)
+            vehicles = vehicle_repo.get_vehicles_with_null_attributes(
+                keep_after=keep_after
+            )
             return [
                 {
                     "listing_id": vehicle.listing_id,
@@ -88,16 +88,17 @@ class DatabaseService:
                     "title": vehicle.title,
                     "price": vehicle.price,
                     "brand": vehicle.brand,
-                    "model": vehicle.model
+                    "model": vehicle.model,
                 }
                 for vehicle in vehicles
             ]
-    
+
     def update_vehicle(self, listing_id: str, vehicle: Vehicle) -> bool:
         """Update an existing vehicle record."""
         with self.db_manager.get_session() as session:
             vehicle_repo = VehicleRepository(session)
             return vehicle_repo.update_vehicle(listing_id, vehicle)
+
 
 # Global database service instance
 db_service = DatabaseService()

@@ -50,7 +50,9 @@ def init_driver(timeout_seconds: int = 30) -> webdriver.Chrome:
             return driver
 
     except TimeoutError:
-        logger.error(f"WebDriver initialization timed out after {timeout_seconds} seconds")
+        logger.error(
+            f"WebDriver initialization timed out after {timeout_seconds} seconds"
+        )
         raise
     except WebDriverException as e:
         logger.error(f"Failed to initialize WebDriver: {str(e)}")
