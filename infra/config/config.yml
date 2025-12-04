@@ -1,5 +1,6 @@
 
 db:
+  # todo: will be reconfigured
   url: "sqlite:///data/carscout_251204.db"
   echo: false
 
@@ -32,6 +33,6 @@ resources:
 
 scrapers:
   listing_scraper:
-    min_req_delay: 1
-    max_req_delay: 3
-    timeout: 10
+    min_req_delay: 1 # minimum delay before a request is made (in seconds)
+    max_req_delay: 3 # maximum delay before a request is made (in seconds)
+    timeout: 10 # how long to wait for a response (in seconds)

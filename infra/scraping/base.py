@@ -20,3 +20,7 @@ class Scraper:
     @abstractmethod
     def scraper_id(self) -> str:
         pass
+
+    @abstractmethod
+    def run(self, *args, **kwargs):
+        pass

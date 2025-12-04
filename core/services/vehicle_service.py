@@ -13,7 +13,7 @@ class VehicleService:
     def create_listing(data: dict) -> Vehicle:
         return Vehicle.from_dict(data)
 
-    def add_vehicle(self, vehicle: Vehicle) -> Vehicle:
+    def insert_vehicle(self, vehicle: Vehicle) -> Vehicle:
         pass
 
     def update_vehicle(self, vehicle: Vehicle) -> Vehicle:

@@ -19,5 +19,6 @@ class ListingService:
     def find_latest(self, listing_id: str) -> Listing | None:
         return self.repo.find_latest(listing_id)
 
-    def find_listings_to_scrape(self):
-        pass
+    def search_last_ingested_listings(self) -> list[Listing]:
+        latest_run_id = self.repo.find_latest_run()
+        return self.repo.search_with_run_id(latest_run_id)
