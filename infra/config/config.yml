@@ -1,0 +1,37 @@
+
+db:
+  url: "sqlite:///data/carscout_251204.db"
+  echo: false
+
+webdriver:
+  chrome_options:
+    - "--disable-blink-features=AutomationControlled"
+    - "--blink-settings=imagesEnabled=false"
+    - "--disable-search-engine-choice-screen"
+    - "--headless=new"
+    - "--disable-dev-shm-usage"
+    - "--no-sandbox"
+  use_stealth: true
+  timeout_seconds: 30
+
+logging:
+  # log_level: 20 # INFO
+  log_level: 10 # DEBUG
+  format: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
+
+http:
+  url: "https://olx.ba/pretraga?category_id=18"
+  client_type: "requests"  # options: "requests" or "httpx"
+  headers:
+    User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+    Accept-Encoding: "gzip, deflate, br, zstd"
+    Accept: "application/json, text/plain, */*"
+
+resources:
+  brands: data/seeds/brands.csv
+
+scrapers:
+  listing_scraper:
+    min_req_delay: 1
+    max_req_delay: 3
+    timeout: 10
