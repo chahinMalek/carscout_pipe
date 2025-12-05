@@ -114,7 +114,7 @@ class Vehicle:
         if isinstance(self.horsepower, str):
             self.horsepower = int(self.horsepower)
         if isinstance(self.weight_kg, str):
-            self.weight_kg = int(self.weight_kg)
+            self.weight_kg = int(self.weight_kg.replace(",", "").replace(".", ""))
         if isinstance(self.year_first_registered, str):
             self.year_first_registered = int(self.year_first_registered)
         if isinstance(self.published_at, str):

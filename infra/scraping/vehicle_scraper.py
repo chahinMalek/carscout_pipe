@@ -44,16 +44,19 @@ class VehicleScraper(Scraper):
             driver = self._webdriver_factory.create()
             http_client = self._http_client_factory.create()
             for idx, listing in enumerate(listings, start=1):
-                if idx % self._reinit_session_every == 0:
-                    self._logger.info("Reinit http client session ...")
-                    http_client = self._http_client_factory.create()
-                vehicle = self._get_vehicle_info(listing, http_client)
-                if vehicle is None:
-                    self._logger.info(f"Failed to extract vehicle details for listing: {listing.id}")
-                    continue
-                yield vehicle
+                try:
+                    if idx % self._reinit_session_every == 0:
+                        self._logger.info("Reinit http client session ...")
+                        http_client = self._http_client_factory.create()
+                    vehicle = self._get_vehicle_info(listing, http_client)
+                    if vehicle is None:
+                        self._logger.info(f"Failed to extract vehicle details for listing: {listing.id}")
+                        continue
+                    yield vehicle
+                except Exception as err:
+                    self._logger.error(f"Unexpected error occurred during scraping listing.id={listing.id}: {err}")
         except Exception as err:
-            self._logger.error(f"Unexpected error occurred during scraping listing.id={listing.id}: {err}")
+            self._logger.error(f"Unexpected error occurred during vehicle info scraping: {err}")
         finally:
             if driver:
                 driver.quit()
@@ -64,6 +67,7 @@ class VehicleScraper(Scraper):
         self._logger.debug(f"Sleeping before request for {req_delay:.4f} seconds.")
         time.sleep(req_delay)
         request_url = f"https://olx.ba/api/listings/{listing.id}"
+        self._logger.debug(f"Retrieving vehicle info from {request_url}")
         response = http_client.get(request_url, timeout=self._timeout)
         if not response.ok:
             return None
