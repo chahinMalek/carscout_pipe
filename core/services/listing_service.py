@@ -1,5 +1,3 @@
-import datetime
-
 from core.entities.listing import Listing
 from core.repositories.listing_repository import ListingRepository
 

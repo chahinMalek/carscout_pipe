@@ -1,5 +1,3 @@
-import datetime
-
 from core.entities.vehicle import Vehicle
 from core.repositories.vehicle_repository import VehicleRepository
 
@@ -14,10 +12,10 @@ class VehicleService:
         return Vehicle.from_dict(data)
 
     def insert_vehicle(self, vehicle: Vehicle) -> Vehicle:
-        pass
+        return self.repo.add(vehicle)
 
-    def update_vehicle(self, vehicle: Vehicle) -> Vehicle:
-        pass
+    def vehicle_exists(self, id: str) -> bool:
+        return self.repo.get(id) is not None
 
-    def get_vehicle(self, id: str) -> Vehicle:
-        pass
+    def get_vehicle(self, id: str) -> Vehicle | None:
+        return self.repo.get(id)
