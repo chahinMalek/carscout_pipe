@@ -3,6 +3,7 @@ import datetime
 from core.repositories.listing_repository import ListingRepository
 from core.entities.listing import Listing
 from infra.db.models.listing import ListingModel
+from infra.db.models.vehicle import VehicleModel
 from infra.db.service import DatabaseService
 
 from sqlalchemy import select
@@ -75,6 +76,18 @@ class SqlAlchemyListingRepository(ListingRepository):
             )
             result = session.scalars(query).first()
             return result.run_id if result else None
+
+    def find_without_vehicle_by_run_id(self, run_id: str) -> list[Listing]:
+        """Find all listings with the given run_id that don't have vehicle information stored."""
+        with self.db_service.create_session() as session:
+            query = (
+                select(ListingModel)
+                .outerjoin(ListingModel.vehicle)
+                .filter(ListingModel.run_id == run_id)
+                .filter(VehicleModel.listing_id.is_(None))
+            )
+            result = session.execute(query).scalars().all()
+            return [self._convert_orm_to_entity(orm) for orm in result]
 
     def search_with_run_id(self, run_id: str) -> list[Listing]:
         """Returns a list of listings found for a given run_id."""

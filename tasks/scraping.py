@@ -41,7 +41,7 @@ def process_listings(
 @inject
 def process_vehicles(
     self,
-    vehicle_scraper: VehicleScraper = Provide[Container.listing_scraper],
+    vehicle_scraper: VehicleScraper = Provide[Container.vehicle_scraper],
     listing_service: ListingService = Provide[Container.listing_service],
     vehicle_service: VehicleService = Provide[Container.vehicle_service],
     logger_factory: LoggerFactory = Provide[Container.logger_factory],
@@ -59,7 +59,6 @@ def process_vehicles(
     run_id = first(listings).run_id
     logger.info(f"Last ingested run_id={run_id}.")
 
-    for listing in listings:
-        vehicle = vehicle_scraper.run(listing)
-        logger.debug(f"Writing vehicle.listing_id={listing.id} into the vehicles table...")
+    for vehicle in vehicle_scraper.run(listings):
+        logger.debug(f"Writing vehicle.listing_id={vehicle.id} into the vehicles table...")
         vehicle_service.insert_vehicle(vehicle)

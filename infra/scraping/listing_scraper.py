@@ -15,7 +15,6 @@ from core.exceptions import PageNotFoundError
 from infra.factory.clients.http import HttpClientFactory
 from infra.factory.logger import LoggerFactory
 from infra.factory.webdriver import WebdriverFactory
-from infra.interfaces.http import HttpClient
 from infra.scraping.base import Scraper
 
 
@@ -31,7 +30,6 @@ class ListingScraper(Scraper):
         timeout: float = 10.0,
     ):
         super().__init__(logger_factory, webdriver_factory, http_client_factory)
-        self._http_client: HttpClient | None = None
         self._min_req_delay = min_req_delay
         self._max_req_delay = max_req_delay
         self._timeout = timeout
@@ -86,7 +84,7 @@ class ListingScraper(Scraper):
     def _get_page_source(self, url: str, driver: webdriver.Chrome) -> str:
         try:
             req_delay = random.uniform(self._min_req_delay, self._max_req_delay)
-            self._logger.debug(f"Sleeping before request for {req_delay} seconds.")
+            self._logger.debug(f"Sleeping before request for {req_delay:.4f} seconds.")
             time.sleep(req_delay)
             driver.get(url)
             WebDriverWait(driver, self._timeout).until(

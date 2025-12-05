@@ -19,4 +19,4 @@ class ListingService:
 
     def search_last_ingested_listings(self) -> list[Listing]:
         latest_run_id = self.repo.find_latest_run()
-        return self.repo.search_with_run_id(latest_run_id)
+        return self.repo.find_without_vehicle_by_run_id(latest_run_id)

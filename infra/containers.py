@@ -13,6 +13,7 @@ from infra.factory.logger import LoggerFactory
 from infra.factory.webdriver import WebdriverFactory
 from infra.resources.brands import read_brands
 from infra.scraping.listing_scraper import ListingScraper
+from infra.scraping.vehicle_scraper import VehicleScraper
 
 
 class Container(containers.DeclarativeContainer):
@@ -93,4 +94,14 @@ class Container(containers.DeclarativeContainer):
         min_req_delay=config.scrapers.listing_scraper.min_req_delay,
         max_req_delay=config.scrapers.listing_scraper.max_req_delay,
         timeout=config.scrapers.listing_scraper.timeout,
+    )
+    vehicle_scraper = providers.Singleton(
+        VehicleScraper,
+        logger_factory=logger_factory,
+        webdriver_factory=webdriver_factory,
+        http_client_factory=http_client_factory,
+        min_req_delay=config.scrapers.vehicle_scraper.min_req_delay,
+        max_req_delay=config.scrapers.vehicle_scraper.max_req_delay,
+        timeout=config.scrapers.vehicle_scraper.timeout,
+        reinit_session_every=config.scrapers.vehicle_scraper.reinit_session_every,
     )

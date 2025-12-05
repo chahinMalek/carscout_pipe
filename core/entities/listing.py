@@ -20,6 +20,8 @@ class Listing:
         self.price = self.price.strip()
         if self.run_id:
             self.run_id = self.run_id.strip()
+        if isinstance(self.visited_at, str):
+            self.visited_at = datetime.datetime.fromisoformat(self.visited_at)
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Listing':

@@ -21,6 +21,9 @@ class ListingRepository(Protocol):
     def find_latest_run(self) -> str | None:
         ...
 
+    def find_without_vehicle_by_run_id(self, run_id: str) -> list[Listing]:
+        ...
+
     def search_with_run_id(self, run_id: str) -> list[Listing]:
         ...
 

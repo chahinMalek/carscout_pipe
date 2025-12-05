@@ -107,6 +107,20 @@ class Vehicle:
             value = getattr(self, field.name)
             if isinstance(value, str):
                 setattr(self, field.name, value.strip())
+        if isinstance(self.build_year, str):
+            self.build_year = int(self.build_year)
+        if isinstance(self.engine_power, str):
+            self.engine_power = int(self.engine_power)
+        if isinstance(self.horsepower, str):
+            self.horsepower = int(self.horsepower)
+        if isinstance(self.weight_kg, str):
+            self.weight_kg = int(self.weight_kg)
+        if isinstance(self.year_first_registered, str):
+            self.year_first_registered = int(self.year_first_registered)
+        if isinstance(self.published_at, str):
+            self.published_at = datetime.datetime.fromisoformat(self.published_at)
+        if isinstance(self.last_visited_at, str):
+            self.last_visited_at = datetime.datetime.fromisoformat(self.last_visited_at)
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Vehicle':
