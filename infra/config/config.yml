@@ -21,7 +21,8 @@ logging:
   format: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
 
 http:
-  url: "https://olx.ba/pretraga?category_id=18"
+#  url: "https://olx.ba/pretraga?category_id=18"
+  url: "https://olx.ba/kategorije"
   client_type: "requests"  # options: "requests" or "httpx"
   headers:
     User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
