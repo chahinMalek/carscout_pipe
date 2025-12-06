@@ -1,4 +1,16 @@
 
+file_service:
+  type: "local"  # options: "local" or "s3"
+  basedir:
+
+logging:
+  # log_level: 20 # INFO
+  log_level: 10 # DEBUG
+  format: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
+
+resources:
+  brands: data/seeds/brands.csv
+
 db:
   # todo: will be reconfigured
   url: "sqlite:///data/carscout_251204.db"
@@ -15,11 +27,6 @@ webdriver:
   use_stealth: true
   timeout_seconds: 30
 
-logging:
-  # log_level: 20 # INFO
-  log_level: 10 # DEBUG
-  format: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
-
 http:
 #  url: "https://olx.ba/pretraga?category_id=18"
   url: "https://olx.ba/kategorije"
@@ -28,9 +35,6 @@ http:
     User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
     Accept-Encoding: "gzip, deflate, br, zstd"
     Accept: "application/json, text/plain, */*"
-
-resources:
-  brands: data/seeds/brands.csv
 
 scrapers:
   listing_scraper:

@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
 
 from dependency_injector import containers, providers
 
+from core.services.brand_service import BrandService
 from core.services.listing_service import ListingService
 from core.services.vehicle_service import VehicleService
 from infra.db.models.base import Base
@@ -11,7 +13,7 @@ from infra.db.service import DatabaseService
 from infra.factory.clients.http import HttpClientFactory, ClientType
 from infra.factory.logger import LoggerFactory
 from infra.factory.webdriver import WebdriverFactory
-from infra.resources.brands import read_brands
+from infra.io.file_service import LocalFileService
 from infra.scraping.listing_scraper import ListingScraper
 from infra.scraping.vehicle_scraper import VehicleScraper
 
@@ -19,12 +21,11 @@ from infra.scraping.vehicle_scraper import VehicleScraper
 class Container(containers.DeclarativeContainer):
 
     environment = os.environ.get("ENVIRONMENT") or "development"
+    project_root = str(Path(__file__).parent.parent.absolute())
 
     config = providers.Configuration()
     config.environment.from_value(environment)
-
-    script_path = os.path.dirname(__file__)
-    config.from_yaml(os.path.join(script_path, "config/config.yml"))
+    config.from_yaml(os.path.join(project_root, "infra/config/config.yml"))
 
     # database
     db_service = providers.Singleton(
@@ -38,10 +39,6 @@ class Container(containers.DeclarativeContainer):
         lambda db: db.create_all_tables(Base),
         db=db_service,
     )
-    read_brands = providers.Resource(
-        read_brands,
-        path=config.resources.brands,
-    )
 
     # repositories
     listing_repository = providers.Singleton(
@@ -51,16 +48,6 @@ class Container(containers.DeclarativeContainer):
     vehicle_repository = providers.Singleton(
         SqlAlchemyVehicleRepository,
         db_service=db_service,
-    )
-
-    # services
-    listing_service = providers.Singleton(
-        ListingService,
-        repo=listing_repository,
-    )
-    vehicle_service = providers.Singleton(
-        VehicleService,
-        repo=vehicle_repository,
     )
 
     # factories
@@ -83,6 +70,33 @@ class Container(containers.DeclarativeContainer):
         logger_factory=logger_factory,
         webdriver_factory=webdriver_factory,
         client_type=config.http.client_type.as_(lambda x: ClientType(x)),
+    )
+
+    # services
+    file_service = providers.Selector(
+        config.file_service.type,
+        local=providers.Singleton(
+            LocalFileService,
+            basedir=project_root,
+            logger_factory=logger_factory,
+        ),
+        # s3=providers.Singleton(
+        #     S3FileService,
+        #     logger_factory=logger_factory,
+        # ),
+    )
+    brand_service = providers.Singleton(
+        BrandService,
+        file_service=file_service,
+        brands_path=config.resources.brands,
+    )
+    listing_service = providers.Singleton(
+        ListingService,
+        repo=listing_repository,
+    )
+    vehicle_service = providers.Singleton(
+        VehicleService,
+        repo=vehicle_repository,
     )
 
     # scrapers

@@ -1,4 +1,4 @@
-from typing import Protocol, Any, Optional, Union
+from typing import Protocol, Any, Optional
 
 
 class HttpClient(Protocol):
@@ -15,7 +15,6 @@ class HttpClient(Protocol):
         timeout: Optional[float] = None,
         **kwargs: Any
     ) -> Any:
-        """Send a GET request"""
         ...
     
     def post(
@@ -28,7 +27,6 @@ class HttpClient(Protocol):
         timeout: Optional[float] = None,
         **kwargs: Any
     ) -> Any:
-        """Send a POST request"""
         ...
     
     def put(
@@ -41,7 +39,6 @@ class HttpClient(Protocol):
         timeout: Optional[float] = None,
         **kwargs: Any
     ) -> Any:
-        """Send a PUT request"""
         ...
     
     def delete(
@@ -52,7 +49,6 @@ class HttpClient(Protocol):
         timeout: Optional[float] = None,
         **kwargs: Any
     ) -> Any:
-        """Send a DELETE request"""
         ...
     
     def patch(
@@ -65,7 +61,6 @@ class HttpClient(Protocol):
         timeout: Optional[float] = None,
         **kwargs: Any
     ) -> Any:
-        """Send a PATCH request"""
         ...
     
     def request(
@@ -74,9 +69,7 @@ class HttpClient(Protocol):
         url: str,
         **kwargs: Any
     ) -> Any:
-        """Send a request with the given method"""
         ...
     
     def close(self) -> None:
-        """Close the client and release resources"""
         ...

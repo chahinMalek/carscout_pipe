@@ -1,9 +1,8 @@
 from dependency_injector.wiring import inject, Provide
-
 from more_itertools import first
 
 from app.celery_app import celery_app
-from core.entities.brand import Brand
+from core.services.brand_service import BrandService
 from core.services.listing_service import ListingService
 from core.services.vehicle_service import VehicleService
 from infra.containers import Container
@@ -18,17 +17,17 @@ def process_listings(
     self,
     listing_scraper: ListingScraper = Provide[Container.listing_scraper],
     service: ListingService = Provide[Container.listing_service],
+    brand_service: BrandService = Provide[Container.brand_service],
     logger_factory: LoggerFactory = Provide[Container.logger_factory],
 ):
     run_id = str(self.request.id).strip()
     task_name = str(self.name).strip()
     logger = logger_factory.create(task_name)
 
-    brands = [
-        Brand(id="3", name="Alfa Romeo", slug="alfa-romeo"),
-        Brand(id="7", name="Audi", slug="audi"),
-        Brand(id="11", name="BMW", slug="bmw"),
-    ]
+    logger.info("Loading brands from seed file")
+    brands = brand_service.load_brands()
+    logger.info(brands)
+    logger.info(f"Loaded {len(brands)} brands")
 
     for brand in brands:
         for listing in listing_scraper.run(brand):
