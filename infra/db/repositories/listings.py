@@ -10,7 +10,6 @@ from sqlalchemy import select
 
 
 class SqlAlchemyListingRepository(ListingRepository):
-
     def __init__(self, db_service: DatabaseService):
         self.db_service = db_service
 
@@ -70,9 +69,7 @@ class SqlAlchemyListingRepository(ListingRepository):
         """Returns the run_id of the most recently inserted listing record."""
         with self.db_service.create_session() as session:
             query = (
-                select(ListingModel)
-                .order_by(ListingModel.visited_at.desc())
-                .limit(1)
+                select(ListingModel).order_by(ListingModel.visited_at.desc()).limit(1)
             )
             result = session.scalars(query).first()
             return result.run_id if result else None
@@ -99,5 +96,7 @@ class SqlAlchemyListingRepository(ListingRepository):
     def search_at(self, date: datetime.datetime) -> list[Listing]:
         pass
 
-    def search_between(self, date_from: datetime.datetime, date_to: datetime.datetime) -> list[Listing]:
+    def search_between(
+        self, date_from: datetime.datetime, date_to: datetime.datetime
+    ) -> list[Listing]:
         pass

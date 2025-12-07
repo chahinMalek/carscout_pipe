@@ -12,6 +12,7 @@ from infra.db.repositories.vehicles import SqlAlchemyVehicleRepository
 from infra.db.service import DatabaseService
 from infra.factory.clients.http import HttpClientFactory, ClientType
 from infra.factory.logger import LoggerFactory
+from infra.factory.providers.webdriver_cookie_provider import WebdriverCookieProvider
 from infra.factory.webdriver import WebdriverFactory
 from infra.io.file_service import LocalFileService
 from infra.scraping.listing_scraper import ListingScraper
@@ -19,7 +20,6 @@ from infra.scraping.vehicle_scraper import VehicleScraper
 
 
 class Container(containers.DeclarativeContainer):
-
     environment = os.environ.get("ENVIRONMENT") or "development"
     project_root = str(Path(__file__).parent.parent.absolute())
 
@@ -63,12 +63,16 @@ class Container(containers.DeclarativeContainer):
         logger_factory=logger_factory,
         timeout_seconds=config.webdriver.timeout_seconds,
     )
+    cookie_provider = providers.Singleton(
+        WebdriverCookieProvider,
+        webdriver_factory=webdriver_factory,
+    )
     http_client_factory = providers.Singleton(
         HttpClientFactory,
         url=config.http.url,
         headers=config.http.headers,
         logger_factory=logger_factory,
-        webdriver_factory=webdriver_factory,
+        cookie_provider=cookie_provider,
         client_type=config.http.client_type.as_(lambda x: ClientType(x)),
     )
 
@@ -104,7 +108,6 @@ class Container(containers.DeclarativeContainer):
         ListingScraper,
         logger_factory=logger_factory,
         webdriver_factory=webdriver_factory,
-        http_client_factory=http_client_factory,
         min_req_delay=config.scrapers.listing_scraper.min_req_delay,
         max_req_delay=config.scrapers.listing_scraper.max_req_delay,
         timeout=config.scrapers.listing_scraper.timeout,
@@ -112,7 +115,6 @@ class Container(containers.DeclarativeContainer):
     vehicle_scraper = providers.Singleton(
         VehicleScraper,
         logger_factory=logger_factory,
-        webdriver_factory=webdriver_factory,
         http_client_factory=http_client_factory,
         min_req_delay=config.scrapers.vehicle_scraper.min_req_delay,
         max_req_delay=config.scrapers.vehicle_scraper.max_req_delay,

@@ -12,24 +12,22 @@ from selenium.webdriver.support.ui import WebDriverWait
 from core.entities.brand import Brand
 from core.entities.listing import Listing
 from core.exceptions import PageNotFoundError
-from infra.factory.clients.http import HttpClientFactory
 from infra.factory.logger import LoggerFactory
 from infra.factory.webdriver import WebdriverFactory
 from infra.scraping.base import Scraper
 
 
 class ListingScraper(Scraper):
-
     def __init__(
         self,
         logger_factory: LoggerFactory,
         webdriver_factory: WebdriverFactory,
-        http_client_factory: HttpClientFactory,
         min_req_delay: float = 1.0,
         max_req_delay: float = 3.0,
         timeout: float = 10.0,
     ):
-        super().__init__(logger_factory, webdriver_factory, http_client_factory)
+        super().__init__(logger_factory)
+        self._webdriver_factory = webdriver_factory
         self._min_req_delay = min_req_delay
         self._max_req_delay = max_req_delay
         self._timeout = timeout
@@ -44,7 +42,9 @@ class ListingScraper(Scraper):
             driver = self._webdriver_factory.create()
             yield from self.scrape_listings(driver, brand)
         except Exception as err:
-            self._logger.error(f"Unexpected error occurred during scraping brand_id={brand.id}: {err}")
+            self._logger.error(
+                f"Unexpected error occurred during scraping brand_id={brand.id}: {err}"
+            )
         finally:
             if driver:
                 driver.quit()
@@ -71,7 +71,9 @@ class ListingScraper(Scraper):
                 self._logger.debug(f"Retrieving next page: {url}")
                 next_page = self._get_next_page(page_source)
             except Exception as err:
-                self._logger.error(f"Unexpected error occurred during scraping listings from url={url}: {err}")
+                self._logger.error(
+                    f"Unexpected error occurred during scraping listings from url={url}: {err}"
+                )
         self._logger.debug(f"No more pages left. Last page url: {url}")
 
     @on_exception(
@@ -96,7 +98,7 @@ class ListingScraper(Scraper):
         except TimeoutException as err:
             if self._check_page_unk(driver.page_source):
                 raise PageNotFoundError(url) from err
-            raise err # re-raise the error to continue backoff
+            raise err  # re-raise the error to continue backoff
 
     def _check_page_unk(self, page_source: str) -> bool:
         patterns_404 = [
@@ -138,6 +140,8 @@ class ListingScraper(Scraper):
         if not pagination_item:
             self._logger.debug("No pagination item found...")
             return None
-        next_page_selector = "normalize-space(//li[@class='active']/following-sibling::li[1]/text())"
+        next_page_selector = (
+            "normalize-space(//li[@class='active']/following-sibling::li[1]/text())"
+        )
         next_page = Selector(text=pagination_item).xpath(next_page_selector).get()
         return next_page or None

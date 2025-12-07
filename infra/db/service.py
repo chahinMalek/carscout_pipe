@@ -3,13 +3,10 @@ from sqlalchemy.orm import sessionmaker
 
 
 class DatabaseService:
-
     def __init__(self, connection_string: str, echo: bool = False):
         self.engine = create_engine(connection_string, echo=echo, future=True)
         self.session_local = sessionmaker(
-            bind=self.engine,
-            autoflush=False,
-            autocommit=False
+            bind=self.engine, autoflush=False, autocommit=False
         )
 
     def create_session(self):

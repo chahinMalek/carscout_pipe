@@ -3,7 +3,6 @@ import sys
 
 
 class LoggerFactory:
-
     def __init__(
         self,
         format: str,

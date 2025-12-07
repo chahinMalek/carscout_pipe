@@ -9,7 +9,6 @@ from infra.db.service import DatabaseService
 
 
 class SqlAlchemyVehicleRepository(VehicleRepository):
-
     def __init__(self, db_service: DatabaseService):
         self.db_service = db_service
 
@@ -20,12 +19,12 @@ class SqlAlchemyVehicleRepository(VehicleRepository):
         data = {col_name: getattr(orm, col_name) for col_name in column_names}
         data["id"] = data.pop("listing_id", None)
         return Vehicle.from_dict(data)
-    
+
     def _convert_entity_to_orm(self, entity: Vehicle) -> VehicleModel:
         data = asdict(entity)
         data["listing_id"] = data.pop("id", None)
         return VehicleModel(**data)
-    
+
     def add(self, vehicle: Vehicle) -> Vehicle:
         with self.db_service.create_session() as session:
             record = self._convert_entity_to_orm(vehicle)

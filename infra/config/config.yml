@@ -35,6 +35,7 @@ http:
     User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
     Accept-Encoding: "gzip, deflate, br, zstd"
     Accept: "application/json, text/plain, */*"
+    referer: "https://olx.ba/kategorije"
 
 scrapers:
   listing_scraper:

@@ -3,9 +3,9 @@ from typing import Protocol, Any, Optional
 
 class HttpClient(Protocol):
     """Protocol for HTTP clients (requests.Session, httpx.Client, etc.)"""
-    
+
     headers: Any  # Header dict-like object
-    
+
     def get(
         self,
         url: str,
@@ -13,10 +13,9 @@ class HttpClient(Protocol):
         params: Optional[dict] = None,
         headers: Optional[dict] = None,
         timeout: Optional[float] = None,
-        **kwargs: Any
-    ) -> Any:
-        ...
-    
+        **kwargs: Any,
+    ) -> Any: ...
+
     def post(
         self,
         url: str,
@@ -25,10 +24,9 @@ class HttpClient(Protocol):
         json: Optional[Any] = None,
         headers: Optional[dict] = None,
         timeout: Optional[float] = None,
-        **kwargs: Any
-    ) -> Any:
-        ...
-    
+        **kwargs: Any,
+    ) -> Any: ...
+
     def put(
         self,
         url: str,
@@ -37,20 +35,18 @@ class HttpClient(Protocol):
         json: Optional[Any] = None,
         headers: Optional[dict] = None,
         timeout: Optional[float] = None,
-        **kwargs: Any
-    ) -> Any:
-        ...
-    
+        **kwargs: Any,
+    ) -> Any: ...
+
     def delete(
         self,
         url: str,
         *,
         headers: Optional[dict] = None,
         timeout: Optional[float] = None,
-        **kwargs: Any
-    ) -> Any:
-        ...
-    
+        **kwargs: Any,
+    ) -> Any: ...
+
     def patch(
         self,
         url: str,
@@ -59,17 +55,9 @@ class HttpClient(Protocol):
         json: Optional[Any] = None,
         headers: Optional[dict] = None,
         timeout: Optional[float] = None,
-        **kwargs: Any
-    ) -> Any:
-        ...
-    
-    def request(
-        self,
-        method: str,
-        url: str,
-        **kwargs: Any
-    ) -> Any:
-        ...
-    
-    def close(self) -> None:
-        ...
+        **kwargs: Any,
+    ) -> Any: ...
+
+    def request(self, method: str, url: str, **kwargs: Any) -> Any: ...
+
+    def close(self) -> None: ...
