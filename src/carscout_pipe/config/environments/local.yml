@@ -1,6 +1,0 @@
-database:
-  url: "sqlite:///data/carscout.db"
-  path: "data/carscout.db"
-  echo: false
-
-environment: "local"
