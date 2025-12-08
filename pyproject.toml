@@ -1,0 +1,67 @@
+[project]
+name = "carscout-pipe"
+version = "0.1.0"
+description = "Open-source scraping pipeline for olx.ba"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "backoff>=2.2.1",
+    "celery[redis]>=5.5.3",
+    "dependency-injector>=4.48.2",
+    "httpx>=0.28.1",
+    "more-itertools>=10.5.0",
+    "pandas>=2.2.3",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.3",
+    "scrapy>=2.12.0",
+    "selenium>=4.27.1",
+    "selenium-stealth>=1.0.6",
+    "sqlalchemy>=2.0.36",
+    "tqdm>=4.67.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=4.0.0",
+    "pytest>=8.3.5",
+    "ruff>=0.9.4",
+]
+
+[project.scripts]
+carscout = "app.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "core", "infra", "scripts", "tasks"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "core", "infra", "scripts", "tasks"]
