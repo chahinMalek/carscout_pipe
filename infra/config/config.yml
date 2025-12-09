@@ -9,7 +9,7 @@ logging:
   format: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
 
 resources:
-  brands: data/seeds/brands.csv
+  brands: resources/seeds/brands_tiny.csv
 
 db:
   # todo: will be reconfigured
@@ -28,7 +28,6 @@ webdriver:
   timeout_seconds: 30
 
 http:
-#  url: "https://olx.ba/pretraga?category_id=18"
   url: "https://olx.ba/kategorije"
   client_type: "requests"  # options: "requests" or "httpx"
   headers:

@@ -37,7 +37,7 @@ COPY core/ ./core/
 COPY infra/ ./infra/
 COPY scripts/ ./scripts/
 COPY tasks/ ./tasks/
-COPY data/ ./data/
+COPY resources/ ./resources/
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH" \

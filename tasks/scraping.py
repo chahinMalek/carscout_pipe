@@ -1,4 +1,5 @@
-from dependency_injector.wiring import inject, Provide
+from celery import chain
+from dependency_injector.wiring import Provide, inject
 from more_itertools import first
 
 from app.celery_app import celery_app
@@ -61,3 +62,10 @@ def process_vehicles(
     for vehicle in vehicle_scraper.run(listings):
         logger.debug(f"Writing vehicle.listing_id={vehicle.id} into the vehicles table...")
         vehicle_service.insert_vehicle(vehicle)
+
+
+@celery_app.task
+def pipeline():
+    """Chain task that processes listings first, then processes vehicles."""
+    workflow = chain(process_listings.s(), process_vehicles.s())
+    return workflow.apply_async()
