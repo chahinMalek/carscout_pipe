@@ -10,7 +10,7 @@ from infra.db.models.base import Base
 from infra.db.repositories.listings import SqlAlchemyListingRepository
 from infra.db.repositories.vehicles import SqlAlchemyVehicleRepository
 from infra.db.service import DatabaseService
-from infra.factory.clients.http import HttpClientFactory, ClientType
+from infra.factory.clients.http import ClientType, HttpClientFactory
 from infra.factory.logger import LoggerFactory
 from infra.factory.providers.webdriver_cookie_provider import WebdriverCookieProvider
 from infra.factory.webdriver import WebdriverFactory
@@ -26,6 +26,15 @@ class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
     config.environment.from_value(environment)
     config.from_yaml(os.path.join(project_root, "infra/config/config.yml"))
+
+    # Override config from environment variables if present
+    config.redis.url.from_env("REDIS_URL", config.redis.url())
+    config.webdriver.chrome_binary_path.from_env(
+        "CHROME_BINARY_PATH", config.webdriver.chrome_binary_path()
+    )
+    config.webdriver.chromedriver_path.from_env(
+        "CHROMEDRIVER_PATH", config.webdriver.chromedriver_path()
+    )
 
     # database
     db_service = providers.Singleton(
@@ -62,6 +71,8 @@ class Container(containers.DeclarativeContainer):
         use_stealth=config.webdriver.use_stealth,
         logger_factory=logger_factory,
         timeout_seconds=config.webdriver.timeout_seconds,
+        chrome_binary_path=config.webdriver.chrome_binary_path,
+        chromedriver_path=config.webdriver.chromedriver_path,
     )
     cookie_provider = providers.Singleton(
         WebdriverCookieProvider,

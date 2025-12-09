@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium_stealth import stealth
 
 from infra.factory.logger import LoggerFactory
@@ -14,19 +15,35 @@ class WebdriverFactory:
         use_stealth: bool,
         logger_factory: LoggerFactory,
         timeout_seconds: int = 30,
+        chrome_binary_path: str = None,
+        chromedriver_path: str = None,
     ):
         self._chrome_options = chrome_options
         self._use_stealth = use_stealth
         self._timeout_seconds = timeout_seconds
+        self._chrome_binary_path = chrome_binary_path
+        self._chromedriver_path = chromedriver_path
         self._logger = logger_factory.create(__name__)
 
     def create(self) -> webdriver.Chrome:
         try:
             with timeout(self._timeout_seconds):
                 chrome_options = Options()
+
+                # Set chromium binary location if configured
+                if self._chrome_binary_path:
+                    chrome_options.binary_location = self._chrome_binary_path
+
                 for option in self._chrome_options:
                     chrome_options.add_argument(option)
-                driver = webdriver.Chrome(options=chrome_options)
+
+                # Create service with ChromeDriver path if configured
+                service = None
+                if self._chromedriver_path:
+                    service = Service(executable_path=self._chromedriver_path)
+
+                driver = webdriver.Chrome(service=service, options=chrome_options)
+
                 if self._use_stealth:
                     stealth(
                         driver,

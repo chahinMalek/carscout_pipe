@@ -8,6 +8,9 @@ logging:
   log_level: 10 # DEBUG
   format: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
 
+redis:
+  url: "redis://localhost:6379/0"
+
 resources:
   brands: resources/seeds/brands_tiny.csv
 
@@ -17,6 +20,8 @@ db:
   echo: false
 
 webdriver:
+  chrome_binary_path: ""  # path to chrome/chromium binary (will try auto-detect if left empty)
+  chromedriver_path: ""  # path to ChromeDriver executable (will try auto-detect if left empty)
   chrome_options:
     - "--disable-blink-features=AutomationControlled"
     - "--blink-settings=imagesEnabled=false"

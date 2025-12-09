@@ -2,7 +2,6 @@ from celery import chain
 from dependency_injector.wiring import Provide, inject
 from more_itertools import first
 
-from app.celery_app import celery_app
 from core.services.brand_service import BrandService
 from core.services.listing_service import ListingService
 from core.services.vehicle_service import VehicleService
@@ -10,6 +9,7 @@ from infra.containers import Container
 from infra.factory.logger import LoggerFactory
 from infra.scraping.listing_scraper import ListingScraper
 from infra.scraping.vehicle_scraper import VehicleScraper
+from worker.main import celery_app
 
 
 @celery_app.task(bind=True)
@@ -37,10 +37,11 @@ def process_listings(
             service.insert_listing(listing)
 
 
-@celery_app.task(bind=True)
+@celery_app.task(bind=True, ignore_result=False)
 @inject
 def process_vehicles(
     self,
+    prev_result=None,  # Accept chained result but ignore it
     vehicle_scraper: VehicleScraper = Provide[Container.vehicle_scraper],
     listing_service: ListingService = Provide[Container.listing_service],
     vehicle_service: VehicleService = Provide[Container.vehicle_service],
@@ -66,6 +67,5 @@ def process_vehicles(
 
 @celery_app.task
 def pipeline():
-    """Chain task that processes listings first, then processes vehicles."""
-    workflow = chain(process_listings.s(), process_vehicles.s())
+    workflow = chain(process_listings.si(), process_vehicles.si())
     return workflow.apply_async()

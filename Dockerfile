@@ -12,6 +12,8 @@ WORKDIR /app
 # Copy dependency files
 COPY pyproject.toml ./
 COPY .python-version ./
+COPY uv.lock ./
+COPY README.md ./
 
 # Install dependencies into a virtual environment
 RUN uv sync --frozen --no-dev
@@ -19,11 +21,13 @@ RUN uv sync --frozen --no-dev
 # Runtime stage
 FROM python:3.11-slim
 
-# Install runtime dependencies if needed (e.g., for selenium/scrapy)
+# Install runtime dependencies including Chrome and ChromeDriver
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     ca-certificates \
+    chromium \
+    chromium-driver \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -36,7 +40,7 @@ COPY app/ ./app/
 COPY core/ ./core/
 COPY infra/ ./infra/
 COPY scripts/ ./scripts/
-COPY tasks/ ./tasks/
+COPY worker/ ./worker/
 COPY resources/ ./resources/
 
 # Set environment variables
