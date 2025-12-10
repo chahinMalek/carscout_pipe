@@ -98,6 +98,27 @@ carscout_pipe/
 
 ## Development
 
+## Local debugging
+
+Run Locally for Better Debugging (Recommended)
+**Terminal 1** - Start Redis:
+
+```
+docker run -p 6379:6379 redis:alpine
+```
+
+**Terminal 2** - Start FastAPI with debugger support:
+
+```
+uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**Terminal 3** - Start Celery worker with detailed logs:
+
+```
+celery -A worker.main worker --loglevel=debug
+```
+
 ### Running Tests
 ```bash
 uv run pytest
