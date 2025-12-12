@@ -48,6 +48,7 @@ Thumbs.db
 
 # Git
 .git/
+.github/
 .gitignore
 
 # Documentation
