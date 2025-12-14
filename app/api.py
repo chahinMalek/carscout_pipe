@@ -25,7 +25,6 @@ def root():
     }
 
 
-# Health Check Routes
 @app.get(
     "/health",
     tags=["Health"],
@@ -42,26 +41,48 @@ def health_check():
     }
 
 
-# Task Management Routes
 @app.post(
-    "/api/v1/tasks/listings",
+    "/api/v1/tasks/listings/{brand_slug}",
     tags=["Tasks"],
-    summary="Start listings scraping task",
+    summary="Start brand listings scraping task",
     status_code=status.HTTP_202_ACCEPTED,
 )
-def start_listings_task():
+def start_listings_for_brand_task(brand_slug: str):
     """
-    Start a task to scrape vehicle listings.
+    Start a task to scrape vehicle listings for a specific brand.
 
     Returns:
         TaskSubmitResponse with task ID and status
     """
-    from worker.tasks import process_listings
+    from worker.tasks import process_listings_for_brand
 
-    task = process_listings.delay()
+    task = process_listings_for_brand.delay(brand_slug=brand_slug)
     return {
         "task_id": task.id,
-        "task_name": "process_listings",
+        "task_name": "process_listings_for_brand",
+        "status": "submitted",
+    }
+
+
+@app.post(
+    "/api/v1/tasks/listings",
+    tags=["Tasks"],
+    summary="Start listings scraping task for all brands",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def start_listings_for_all_brands_task():
+    """
+    Start a task to scrape vehicle listings for all brands.
+
+    Returns:
+        TaskSubmitResponse with task ID and status
+    """
+    from worker.tasks import spawn_listing_tasks
+
+    task = spawn_listing_tasks.delay()
+    return {
+        "task_id": task.id,
+        "task_name": "spawn_listing_tasks",
         "status": "submitted",
     }
 

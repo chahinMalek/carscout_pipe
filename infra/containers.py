@@ -42,8 +42,6 @@ class Container(containers.DeclarativeContainer):
         connection_string=config.db.url,
         echo=config.db.echo,
     )
-
-    # resources
     init_db = providers.Resource(
         lambda db: db.create_all_tables(Base),
         db=db_service,
@@ -112,6 +110,10 @@ class Container(containers.DeclarativeContainer):
     vehicle_service = providers.Singleton(
         VehicleService,
         repo=vehicle_repository,
+    )
+    load_brands = providers.Resource(
+        lambda service: service.read_brands(),
+        service=brand_service,
     )
 
     # scrapers

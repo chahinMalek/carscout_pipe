@@ -4,8 +4,8 @@ file_service:
   basedir:
 
 logging:
-  # log_level: 20 # INFO
-  log_level: 10 # DEBUG
+  log_level: 20 # INFO
+  # log_level: 10 # DEBUG
   format: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
 
 redis:
@@ -44,10 +44,10 @@ http:
 scrapers:
   listing_scraper:
     min_req_delay: 1 # minimum delay before a request is made (in seconds)
-    max_req_delay: 3 # maximum delay before a request is made (in seconds)
-    timeout: 10 # how long to wait for a response (in seconds)
+    max_req_delay: 5 # maximum delay before a request is made (in seconds)
+    timeout: 20 # how long to wait for a response (in seconds)
   vehicle_scraper:
     min_req_delay: 1 # minimum delay before a request is made (in seconds)
-    max_req_delay: 3 # maximum delay before a request is made (in seconds)
-    timeout: 10 # how long to wait for a response (in seconds)
+    max_req_delay: 5 # maximum delay before a request is made (in seconds)
+    timeout: 20 # how long to wait for a response (in seconds)
     reinit_session_every: 500
