@@ -88,24 +88,78 @@ def start_listings_for_all_brands_task():
 
 
 @app.post(
-    "/api/v1/tasks/vehicles",
+    "/api/v1/tasks/vehicles/{listing_id}",
     tags=["Tasks"],
-    summary="Start vehicle details scraping task",
+    summary="Start vehicle details scraping task for a specific listing",
     status_code=status.HTTP_202_ACCEPTED,
 )
-def start_vehicles_task():
+def start_vehicle_task_for_listing(listing_id: str):
     """
-    Start a task to scrape detailed vehicle information.
+    Start a task to scrape detailed vehicle information for a specific listing.
+
+    Args:
+        listing_id: The unique identifier of the listing to process
 
     Returns:
         TaskSubmitResponse with task ID and status
     """
-    from worker.tasks import process_vehicles
+    from worker.tasks import process_listing
 
-    task = process_vehicles.delay()
+    task = process_listing.delay(listing_id=listing_id)
     return {
         "task_id": task.id,
-        "task_name": "process_vehicles",
+        "task_name": "process_listing",
+        "listing_id": listing_id,
+        "status": "submitted",
+    }
+
+
+@app.post(
+    "/api/v1/tasks/vehicles/run/{run_id}",
+    tags=["Tasks"],
+    summary="Start vehicle details scraping task for a specific run_id",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def start_vehicles_task_for_run(run_id: str):
+    """
+    Start a task to scrape detailed vehicle information for all listings in a specific run.
+
+    Args:
+        run_id: The unique identifier of the run to process
+
+    Returns:
+        TaskSubmitResponse with task ID and status
+    """
+    from worker.tasks import spawn_vehicle_tasks_for_run
+
+    task = spawn_vehicle_tasks_for_run.delay(run_id=run_id)
+    return {
+        "task_id": task.id,
+        "task_name": "spawn_vehicle_tasks_for_run",
+        "run_id": run_id,
+        "status": "submitted",
+    }
+
+
+@app.post(
+    "/api/v1/tasks/vehicles",
+    tags=["Tasks"],
+    summary="Start vehicle details scraping task for all last ingested listings",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def start_vehicles_task():
+    """
+    Start a task to scrape detailed vehicle information for all last ingested listings.
+
+    Returns:
+        TaskSubmitResponse with task ID and status
+    """
+    from worker.tasks import spawn_vehicle_tasks
+
+    task = spawn_vehicle_tasks.delay()
+    return {
+        "task_id": task.id,
+        "task_name": "spawn_vehicle_tasks",
         "status": "submitted",
     }
 
