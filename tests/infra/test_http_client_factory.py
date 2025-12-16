@@ -5,7 +5,6 @@ import pytest
 import requests
 
 from infra.factory.clients.http import ClientType, HttpClientFactory
-from infra.factory.logger import LoggerFactory
 from infra.interfaces.cookie_provider import CookieProvider
 
 
@@ -18,12 +17,6 @@ class TestHttpClientFactory:
             "Accept": "application/json",
             "Connection": "keep-alive",
         }
-
-    @pytest.fixture
-    def mock_logger_factory(self):
-        factory = Mock(spec=LoggerFactory)
-        factory.create.return_value = Mock()
-        return factory
 
     @pytest.fixture
     def mock_cookie_provider(self):
