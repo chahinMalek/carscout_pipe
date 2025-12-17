@@ -205,17 +205,12 @@ def get_task_status(task_id: str):
     """
     result = AsyncResult(task_id, app=celery_app)
 
-    # Convert result to dict if it's ready and not None
-    task_result = None
-    if result.ready() and result.result is not None:
-        task_result = (
-            result.result if isinstance(result.result, dict) else {"value": str(result.result)}
-        )
-
     return {
         "task_id": task_id,
+        "state": result.state,
         "status": result.status,
-        "result": task_result,
+        "result": result.result if result.successful() else None,
+        "error": str(result.result) if result.failed() else None,
     }
 
 
