@@ -211,9 +211,10 @@ class TestVehicleScraper:
             vehicles = list(scraper.run(listings))
 
         # only the first and last one should be present in the result
-        assert len(vehicles) == 2
+        assert len(vehicles) == 3
         assert vehicles[0].id == "11111"
-        assert vehicles[1].id == "33333"
+        assert vehicles[1] is None
+        assert vehicles[2].id == "33333"
 
     def test_run_session_reinit(
         self, scraper, mock_http_client_factory, mock_http_client, sample_api_response
