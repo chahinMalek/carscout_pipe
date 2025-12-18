@@ -6,7 +6,7 @@ from worker.main import celery_app
 app = FastAPI(
     title="CarScout Scraping Pipeline",
     description="API for managing vehicle scraping tasks",
-    version="0.1.0",
+    version="0.1.1",
 )
 
 
@@ -17,10 +17,9 @@ app = FastAPI(
     status_code=status.HTTP_200_OK,
 )
 def root():
-    """Welcome message with API information."""
     return {
         "message": "CarScout Scraping Pipeline API",
-        "version": "0.1.0",
+        "version": "0.1.1",
         "docs": "/docs",
     }
 
@@ -32,35 +31,9 @@ def root():
     status_code=status.HTTP_200_OK,
 )
 def health_check():
-    """
-    Check if the API and Celery broker are healthy.
-    """
     return {
         "status": "healthy",
         "celery_broker": celery_app.conf.broker_url,
-    }
-
-
-@app.post(
-    "/api/v1/tasks/listings/{brand_slug}",
-    tags=["Tasks"],
-    summary="Start brand listings scraping task",
-    status_code=status.HTTP_202_ACCEPTED,
-)
-def start_listings_for_brand_task(brand_slug: str):
-    """
-    Start a task to scrape vehicle listings for a specific brand.
-
-    Returns:
-        TaskSubmitResponse with task ID and status
-    """
-    from worker.tasks import process_listings_for_brand
-
-    task = process_listings_for_brand.delay(brand_slug=brand_slug)
-    return {
-        "task_id": task.id,
-        "task_name": "process_listings_for_brand",
-        "status": "submitted",
     }
 
 
@@ -70,46 +43,13 @@ def start_listings_for_brand_task(brand_slug: str):
     summary="Start listings scraping task for all brands",
     status_code=status.HTTP_202_ACCEPTED,
 )
-def start_listings_for_all_brands_task():
-    """
-    Start a task to scrape vehicle listings for all brands.
+def start_listings_processing_task():
+    from worker.tasks import process_listings
 
-    Returns:
-        TaskSubmitResponse with task ID and status
-    """
-    from worker.tasks import spawn_listing_tasks
-
-    task = spawn_listing_tasks.delay()
+    task = process_listings.delay()
     return {
         "task_id": task.id,
-        "task_name": "spawn_listing_tasks",
-        "status": "submitted",
-    }
-
-
-@app.post(
-    "/api/v1/tasks/vehicles/{listing_id}",
-    tags=["Tasks"],
-    summary="Start vehicle details scraping task for a specific listing",
-    status_code=status.HTTP_202_ACCEPTED,
-)
-def start_vehicle_task_for_listing(listing_id: str):
-    """
-    Start a task to scrape detailed vehicle information for a specific listing.
-
-    Args:
-        listing_id: The unique identifier of the listing to process
-
-    Returns:
-        TaskSubmitResponse with task ID and status
-    """
-    from worker.tasks import process_listing
-
-    task = process_listing.delay(listing_id=listing_id)
-    return {
-        "task_id": task.id,
-        "task_name": "process_listing",
-        "listing_id": listing_id,
+        "task_name": "process_listings",
         "status": "submitted",
     }
 
@@ -120,46 +60,13 @@ def start_vehicle_task_for_listing(listing_id: str):
     summary="Start vehicle details scraping task for a specific run_id",
     status_code=status.HTTP_202_ACCEPTED,
 )
-def start_vehicles_task_for_run(run_id: str):
-    """
-    Start a task to scrape detailed vehicle information for all listings in a specific run.
+def start_vehicles_processing_task_for_run(run_id: str):
+    from worker.tasks import process_vehicles
 
-    Args:
-        run_id: The unique identifier of the run to process
-
-    Returns:
-        TaskSubmitResponse with task ID and status
-    """
-    from worker.tasks import spawn_vehicle_tasks_for_run
-
-    task = spawn_vehicle_tasks_for_run.delay(run_id=run_id)
+    task = process_vehicles.delay(run_id=run_id)
     return {
         "task_id": task.id,
-        "task_name": "spawn_vehicle_tasks_for_run",
-        "run_id": run_id,
-        "status": "submitted",
-    }
-
-
-@app.post(
-    "/api/v1/tasks/vehicles",
-    tags=["Tasks"],
-    summary="Start vehicle details scraping task for all last ingested listings",
-    status_code=status.HTTP_202_ACCEPTED,
-)
-def start_vehicles_task():
-    """
-    Start a task to scrape detailed vehicle information for all last ingested listings.
-
-    Returns:
-        TaskSubmitResponse with task ID and status
-    """
-    from worker.tasks import spawn_vehicle_tasks
-
-    task = spawn_vehicle_tasks.delay()
-    return {
-        "task_id": task.id,
-        "task_name": "spawn_vehicle_tasks",
+        "task_name": "process_vehicles",
         "status": "submitted",
     }
 
@@ -171,12 +78,6 @@ def start_vehicles_task():
     status_code=status.HTTP_202_ACCEPTED,
 )
 def start_pipeline_task():
-    """
-    Start the full scraping pipeline (listings + vehicles).
-
-    Returns:
-        TaskSubmitResponse with task ID and status
-    """
     from worker.tasks import pipeline
 
     task = pipeline.delay()
@@ -194,23 +95,13 @@ def start_pipeline_task():
     status_code=status.HTTP_200_OK,
 )
 def get_task_status(task_id: str):
-    """
-    Get the status of a specific task by its ID.
-
-    Args:
-        task_id: The unique identifier of the task
-
-    Returns:
-        TaskStatusResponse with current status and result (if completed)
-    """
     result = AsyncResult(task_id, app=celery_app)
-
     return {
         "task_id": task_id,
-        "state": result.state,
         "status": result.status,
         "result": result.result if result.successful() else None,
         "error": str(result.result) if result.failed() else None,
+        "info": result.info,
     }
 
 
@@ -222,8 +113,6 @@ def get_task_status(task_id: str):
 )
 def cancel_task(task_id: str, terminate: bool = False):
     """
-    Cancel or revoke a running or pending task.
-
     Args:
         task_id: The unique identifier of the task to cancel
         terminate: If True, forcefully terminate the task (SIGKILL).
@@ -232,7 +121,7 @@ def cancel_task(task_id: str, terminate: bool = False):
     Returns:
         Confirmation with task ID and cancellation status
 
-    Note:
+    Notes:
         - Pending tasks will be removed from queue
         - Running tasks will be terminated based on the 'terminate' parameter
         - Completed tasks cannot be cancelled
@@ -257,15 +146,6 @@ def cancel_task(task_id: str, terminate: bool = False):
     status_code=status.HTTP_200_OK,
 )
 def list_tasks():
-    """
-    List all tasks across different states.
-
-    Returns:
-        TaskListResponse containing:
-        - active: Tasks currently being executed
-        - scheduled: Tasks scheduled for future execution (ETA/countdown)
-        - reserved: Tasks pulled by workers but not yet started
-    """
     inspect = celery_app.control.inspect()
 
     active = inspect.active() or {}
