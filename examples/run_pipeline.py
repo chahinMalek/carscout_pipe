@@ -1,11 +1,11 @@
 from infra.containers import Container
-from tasks.scraping import process_vehicles
+from worker.tasks import pipeline
 
 
 def main():
     container = Container()
     container.init_resources()
-    process_vehicles.delay()
+    pipeline.delay()
 
 
 if __name__ == "__main__":
