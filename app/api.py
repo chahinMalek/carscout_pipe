@@ -1,12 +1,16 @@
+from importlib.metadata import version
+
 from celery.result import AsyncResult
 from fastapi import FastAPI, status
 
 from worker.main import celery_app
 
+__version__ = version("carscout-pipe")
+
 app = FastAPI(
     title="CarScout Scraping Pipeline",
     description="API for managing vehicle scraping tasks",
-    version="0.1.1",
+    version=__version__,
 )
 
 
@@ -19,7 +23,7 @@ app = FastAPI(
 def root():
     return {
         "message": "CarScout Scraping Pipeline API",
-        "version": "0.1.1",
+        "version": __version__,
         "docs": "/docs",
     }
 

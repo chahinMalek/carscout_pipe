@@ -87,11 +87,12 @@ Base URL: `http://localhost:8000`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/tasks/listings` | Scrape all brands (parallel tasks) |
-| `POST` | `/api/v1/tasks/listings/{brand_slug}` | Scrape single brand |
-| `POST` | `/api/v1/tasks/vehicles` | Scrape vehicle details for latest run |
+| `POST` | `/api/v1/tasks/listings` | Scrape all brands |
+| `POST` | `/api/v1/tasks/vehicles/run/{run_id}` | Scrape vehicle details for specific run |
 | `POST` | `/api/v1/tasks/pipeline` | Full pipeline (listings → vehicles) |
 | `GET` | `/api/v1/tasks/{task_id}` | Check task status |
+| `GET` | `/api/v1/tasks` | List all tasks |
+| `DELETE` | `/api/v1/tasks/{task_id}` | Cancel/revoke a task |
 | `GET` | `/health` | Health check |
 
 **Example:**
@@ -99,8 +100,11 @@ Base URL: `http://localhost:8000`
 # Start full pipeline
 curl -X POST http://localhost:8000/api/v1/tasks/pipeline
 
-# Check task status
+# Check task status (replace {task_id} with actual task ID from response)
 curl http://localhost:8000/api/v1/tasks/{task_id}
+
+# Scrape vehicle details for a specific run
+curl -X POST http://localhost:8000/api/v1/tasks/vehicles/run/{run_id}
 ```
 
 ## Task Management
