@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   redis:
@@ -18,9 +17,9 @@ services:
       redis:
         condition: service_healthy
     environment:
-      - REDIS_URL=redis://redis:6379/0
-      - CHROME_BINARY_PATH=/usr/bin/chromium
-      - CHROMEDRIVER_PATH=/usr/bin/chromedriver
+      - REDIS__URL=redis://redis:6379/0
+      - WEBDRIVER__CHROME_BINARY_PATH=/usr/bin/chromium
+      - WEBDRIVER__CHROMEDRIVER_PATH=/usr/bin/chromedriver
     volumes:
       - ./app:/app/app
       - ./core:/app/core
@@ -38,7 +37,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS__URL=redis://redis:6379/0
     volumes:
       - ./app:/app/app
       - ./core:/app/core

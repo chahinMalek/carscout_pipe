@@ -148,18 +148,9 @@ carscout_pipe/
 
 ## Configuration
 
-Configuration is managed via [`infra/config/config.yml`](infra/config/config.yml) with environment variable overrides:
-
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `REDIS_URL` | Celery broker URL | `redis://localhost:6379/0` |
-| `CHROME_BINARY_PATH` | Chrome binary path | Auto-detected |
-| `CHROMEDRIVER_PATH` | ChromeDriver path | Auto-detected |
-
-Key config sections:
-- **scrapers**: Rate limiting (`min_req_delay`, `max_req_delay`)
-- **webdriver**: Chrome options (headless, stealth mode)
-- **resources.brands**: CSV seed file path (`brands_tiny.csv` for dev)
+Configurations are managed with a combination of environment variables and yaml files.
+Some settings are exposed to be configured through environment variables (for docker) while some are kept in yaml.
+YAML configuration is managed in `infra/configs/`.
 
 ## Development
 

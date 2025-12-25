@@ -4,24 +4,13 @@ file_service:
   basedir:
 
 logging:
-  log_level: 20 # INFO
-  # log_level: 10 # DEBUG
   format: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
 
-redis:
-  url: "redis://localhost:6379/0"
-
 resources:
-  brands: resources/seeds/brands_tiny.csv
-
-db:
-  # todo: will be reconfigured
-  url: "sqlite:///data/carscout_251204.db"
-  echo: false
+  brands: resources/seeds/brands.csv
+#  brands: resources/seeds/brands_tiny.csv
 
 webdriver:
-  chrome_binary_path: ""  # path to chrome/chromium binary (will try auto-detect if left empty)
-  chromedriver_path: ""  # path to ChromeDriver executable (will try auto-detect if left empty)
   chrome_options:
     - "--disable-blink-features=AutomationControlled"
     - "--blink-settings=imagesEnabled=false"
@@ -44,10 +33,10 @@ http:
 scrapers:
   listing_scraper:
     min_req_delay: 1 # minimum delay before a request is made (in seconds)
-    max_req_delay: 5 # maximum delay before a request is made (in seconds)
+    max_req_delay: 4 # maximum delay before a request is made (in seconds)
     timeout: 20 # how long to wait for a response (in seconds)
   vehicle_scraper:
     min_req_delay: 1 # minimum delay before a request is made (in seconds)
-    max_req_delay: 5 # maximum delay before a request is made (in seconds)
+    max_req_delay: 4 # maximum delay before a request is made (in seconds)
     timeout: 20 # how long to wait for a response (in seconds)
     reinit_session_every: 500

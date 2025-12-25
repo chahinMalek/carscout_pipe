@@ -6,7 +6,7 @@ container = Container()
 container.init_resources()  # create DB tables
 
 # Get Redis URL from container config
-REDIS_URL = container.config.redis.url()
+REDIS_URL = container.config.redis.url.provided()
 
 celery_app = Celery(
     "vehicle_scraper",
