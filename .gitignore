@@ -203,7 +203,18 @@ coverage/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
 
 # Local data
 data/
+
+# Airflow
+airflow/*
+!airflow/dags/
+airflow/dags/*
+!airflow/dags/*.py
+!airflow/logs/
+!airflow/logs/.gitkeep
+!airflow/plugins/
+!airflow/plugins/.gitkeep
+!airflow/Dockerfile

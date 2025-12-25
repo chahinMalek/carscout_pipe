@@ -17,8 +17,8 @@ class SQLiteSettings(BaseModel):
     echo: bool = False
 
 
-class RedisSettings(BaseModel):
-    url: str
+class ResourcesSettings(BaseModel):
+    brands: str
 
 
 class Settings(BaseSettings):
@@ -36,5 +36,5 @@ class Settings(BaseSettings):
     project_root: str = str(PROJECT_ROOT)
 
     logging: LoggingSettings
-    redis: RedisSettings
     database: SQLiteSettings
+    resources: ResourcesSettings
