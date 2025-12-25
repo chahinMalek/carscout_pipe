@@ -5,7 +5,6 @@ from dependency_injector import containers, providers
 from core.services.brand_service import BrandService
 from core.services.listing_service import ListingService
 from core.services.vehicle_service import VehicleService
-from infra.config import Settings
 from infra.db.models.base import Base
 from infra.db.repositories.listings import SqlAlchemyListingRepository
 from infra.db.repositories.vehicles import SqlAlchemyVehicleRepository
@@ -17,6 +16,7 @@ from infra.factory.webdriver import WebdriverFactory
 from infra.io.file_service import LocalFileService
 from infra.scraping.listing_scraper import ListingScraper
 from infra.scraping.vehicle_scraper import VehicleScraper
+from infra.settings import Settings
 
 
 def init_database(db_service):
