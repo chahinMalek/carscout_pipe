@@ -21,6 +21,11 @@ class ResourcesSettings(BaseModel):
     brands: str
 
 
+class WebdriverSettings(BaseModel):
+    chrome_binary_path: str | None = None
+    chromedriver_path: str | None = None
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=str(PROJECT_ROOT / ".env"),
@@ -38,3 +43,4 @@ class Settings(BaseSettings):
     logging: LoggingSettings
     database: SQLiteSettings
     resources: ResourcesSettings
+    webdriver: WebdriverSettings

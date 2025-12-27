@@ -1,9 +1,7 @@
-FROM apache/airflow:2.9.3
+FROM apache/airflow:2.9.3-python3.11
 
-# Switch to root to install system deps if needed
 USER root
 
-# Install runtime dependencies including Chrome and ChromeDriver
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -12,11 +10,12 @@ RUN apt-get update && apt-get install -y \
     chromium-driver \
     && rm -rf /var/lib/apt/lists/*
 
-# Switch back to airflow user
 USER airflow
+WORKDIR /opt/app
 
-# Copy app code
 COPY . /opt/app
 
-# Install your app
-RUN pip install --no-cache-dir /opt/app
+RUN pip install --no-cache-dir -U pip \
+    && pip install --no-cache-dir .
+
+ENV PYTHONPATH="/opt/app:$PYTHONPATH"

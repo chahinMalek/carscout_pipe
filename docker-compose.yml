@@ -1,47 +1,74 @@
 
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: airflow/Dockerfile
+  env_file:
+    - .env.docker
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: "60"
+    AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    AIRFLOW__WEBSERVER__RBAC: "true"
+    AIRFLOW__WEBSERVER__WEB_SERVER_PORT: "8080"
+    AIRFLOW__CORE__FERNET_KEY: "RtPNNcSMV5honWfZqjLO9KCyRGirpgzLEf7Jo="
+    PYTHONPATH: /opt/app
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./:/opt/app
+    - ./data:/opt/app/data
+    - airflow-logs:/opt/airflow/logs
+  depends_on:
+    airflow-postgres:
+      condition: service_healthy
+
 services:
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
+
+  airflow-postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
       retries: 5
 
-  celery-worker:
-    build: .
-    command: celery -A worker.main worker --loglevel=info
-    depends_on:
-      redis:
-        condition: service_healthy
-    environment:
-      - REDIS__URL=redis://redis:6379/0
-      - WEBDRIVER__CHROME_BINARY_PATH=/usr/bin/chromium
-      - WEBDRIVER__CHROMEDRIVER_PATH=/usr/bin/chromedriver
-    volumes:
-      - ./app:/app/app
-      - ./core:/app/core
-      - ./infra:/app/infra
-      - ./worker:/app/worker
-      - ./resources:/app/resources
-      - ./data:/app/data
+  airflow-init:
+    <<: *airflow-common
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true
+      "
+    restart: "no"
 
-  api:
-    build: .
-    command: uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
     ports:
-      - "8000:8000"
-    depends_on:
-      redis:
-        condition: service_healthy
-    environment:
-      - REDIS__URL=redis://redis:6379/0
-    volumes:
-      - ./app:/app/app
-      - ./core:/app/core
-      - ./infra:/app/infra
-      - ./worker:/app/worker
-      - ./resources:/app/resources
-      - ./data:/app/data
+      - "8080:8080"
+    restart: always
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    restart: always
+
+volumes:
+  airflow-db:
+  airflow-logs:
