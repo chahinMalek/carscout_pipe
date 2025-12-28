@@ -51,7 +51,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "core", "infra", "examples"]
+known-first-party = ["core", "infra", "examples"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -61,4 +61,4 @@ python_functions = ["test_*"]
 addopts = "-v --tb=short"
 
 [tool.hatch.build.targets.wheel]
-packages = ["app", "core", "infra", "examples"]
+packages = ["core", "infra", "examples"]
