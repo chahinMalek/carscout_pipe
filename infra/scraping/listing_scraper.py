@@ -1,9 +1,9 @@
 import random
 import time
+from collections.abc import Generator
 from datetime import datetime
-from typing import Generator
 
-from backoff import on_exception, expo
+from backoff import expo, on_exception
 from scrapy import Selector
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
@@ -22,6 +22,7 @@ class ListingScraper(Scraper):
         self,
         logger_factory: LoggerFactory,
         webdriver_factory: WebdriverFactory,
+        created_gte: str = "-7+days",
         min_req_delay: float = 1.0,
         max_req_delay: float = 3.0,
         timeout: float = 10.0,
@@ -31,6 +32,7 @@ class ListingScraper(Scraper):
         self._min_req_delay = min_req_delay
         self._max_req_delay = max_req_delay
         self._timeout = timeout
+        self._created_gte = created_gte
 
     @property
     def scraper_id(self) -> str:
@@ -53,14 +55,16 @@ class ListingScraper(Scraper):
         self,
         driver: webdriver.Chrome,
         brand: Brand,
-    ) -> Generator[list[Listing], None, None]:
+    ) -> Generator[Listing, None, None]:
         next_page = "1"
         url_template = (
             "https://olx.ba/pretraga?attr=&attr_encoded=1&category_id=18&"
-            "brand={brand_id}&models=0&brands={brand_id}&page={page}&created_gte=-7+days"
+            "brand={brand_id}&models=0&brands={brand_id}&page={page}&created_gte={created_gte}"
         )
         while next_page:
-            url = url_template.format(brand_id=brand.id, page=next_page)
+            url = url_template.format(
+                brand_id=brand.id, page=next_page, created_gte=self._created_gte
+            )
             self._logger.info(f"Scraping listings from: {url}")
             try:
                 self._logger.debug(f"Retrieving page source: {url}")
@@ -120,7 +124,9 @@ class ListingScraper(Scraper):
             listing_id = listing_url.split("/")[-1]
             title_selector = "//h1[contains(@class, 'main-heading')]/text()"
             listing_title = card_selector.xpath(title_selector).get().strip()
-            price_selector = "//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]/text()"
+            price_selector = (
+                "//div[contains(@class, 'price-wrap')]//span[contains(@class, 'smaller')]/text()"
+            )
             listing_price = card_selector.xpath(price_selector).get().strip()
             listings.append(
                 Listing(

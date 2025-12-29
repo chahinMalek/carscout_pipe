@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship
 
 from infra.db.models.base import Base
@@ -106,4 +106,10 @@ class VehicleModel(Base):
     oldtimer = Column(String, nullable=True)
 
     # relationships
-    listings = relationship("ListingModel", back_populates="vehicle")
+    listings = relationship(
+        "ListingModel",
+        back_populates="vehicle",
+        primaryjoin="VehicleModel.listing_id == ListingModel.listing_id",
+        foreign_keys="ListingModel.listing_id",
+        overlaps="vehicle",
+    )

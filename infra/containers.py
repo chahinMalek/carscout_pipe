@@ -102,6 +102,7 @@ class Container(containers.DeclarativeContainer):
         ListingScraper,
         logger_factory=logger_factory,
         webdriver_factory=webdriver_factory,
+        created_gte=config.scrapers.listing_scraper.created_gte,
         min_req_delay=config.scrapers.listing_scraper.min_req_delay,
         max_req_delay=config.scrapers.listing_scraper.max_req_delay,
         timeout=config.scrapers.listing_scraper.timeout,

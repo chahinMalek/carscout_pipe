@@ -35,6 +35,7 @@ scrapers:
     min_req_delay: 1 # minimum delay before a request is made (in seconds)
     max_req_delay: 4 # maximum delay before a request is made (in seconds)
     timeout: 20 # how long to wait for a response (in seconds)
+    created_gte: "-7+days" # minimum age of the listing (api query parameter)
   vehicle_scraper:
     min_req_delay: 1 # minimum delay before a request is made (in seconds)
     max_req_delay: 4 # maximum delay before a request is made (in seconds)
