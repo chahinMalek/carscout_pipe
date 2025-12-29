@@ -11,6 +11,8 @@ resources:
 #  brands: resources/seeds/brands_tiny.csv
 
 webdriver:
+  chrome_binary_path:
+  chromedriver_path:
   chrome_options:
     - "--disable-blink-features=AutomationControlled"
     - "--blink-settings=imagesEnabled=false"
@@ -20,6 +22,10 @@ webdriver:
     - "--no-sandbox"
   use_stealth: true
   timeout_seconds: 30
+
+database:
+  url: "sqlite:///data/carscout_251204.db"
+  echo: false
 
 http:
   url: "https://olx.ba/kategorije"
