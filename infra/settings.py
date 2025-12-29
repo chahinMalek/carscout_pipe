@@ -1,9 +1,9 @@
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import yaml
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 # constants
@@ -11,65 +11,55 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class FileServiceSettings(BaseModel):
-    type: Literal["local", "s3"] = "local"
-    basedir: str | None = None
+    type: Annotated[Literal["local", "s3"], Field(default="local")]
+    basedir: Annotated[str | None, Field(default=None)]
 
 
 class LoggingSettings(BaseModel):
-    log_level: int = 10
-    format: str = "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
+    log_level: Annotated[int, Field(default=10)]
+    format: Annotated[str, Field(default="%(name)s - %(asctime)s - %(levelname)s - %(message)s")]
 
 
 class ResourcesSettings(BaseModel):
-    brands: str | None = None
+    brands: Annotated[str | None, Field(default=None)]
 
 
 class WebdriverSettings(BaseModel):
-    chrome_binary_path: str | None = None
-    chromedriver_path: str | None = None
-    chrome_options: list[str] = []
-    use_stealth: bool = True
-    timeout_seconds: int = 30
+    chrome_binary_path: Annotated[str | None, Field(default=None)]
+    chromedriver_path: Annotated[str | None, Field(default=None)]
+    chrome_options: Annotated[list[str], Field(default_factory=list)]
+    use_stealth: Annotated[bool, Field(default=True)]
+    timeout_seconds: Annotated[int, Field(default=30)]
 
 
 class DatabaseSettings(BaseModel):
-    url: str | None = None
-    echo: bool = False
+    url: Annotated[str | None, Field(default=None)]
+    echo: Annotated[bool, Field(default=False)]
 
 
 class HttpSettings(BaseModel):
-    url: str | None = None
-    client_type: Literal["requests", "httpx"] = "requests"
-    headers: dict[str, str] = {}
+    url: Annotated[str | None, Field(default=None)]
+    client_type: Annotated[Literal["requests", "httpx"], Field(default="requests")]
+    headers: Annotated[dict[str, str], Field(default_factory=dict)]
 
 
 class ListingScraperSettings(BaseModel):
-    min_req_delay: float = 1.0
-    max_req_delay: float = 4.0
-    timeout: float = 20.0
-    created_gte: Literal["-24+hours", "-7+days", "-30+days"] = "-7+days"
-
-    @field_validator("created_gte")
-    @classmethod
-    def validate_created_gte(cls, v: str) -> str:
-        if v not in ["-24+hours", "-7+days", "-30+days"]:
-            raise ValueError(
-                f"Invalid created_gte format: '{v}'. "
-                "Must be one of: '-24+hours', '-7+days', '-30+days'"
-            )
-        return v
+    min_req_delay: Annotated[float, Field(default=1.0)]
+    max_req_delay: Annotated[float, Field(default=4.0)]
+    timeout: Annotated[float, Field(default=20.0)]
+    created_gte: Annotated[Literal["-24+hours", "-7+days", "-30+days"], Field(default="-7+days")]
 
 
 class VehicleScraperSettings(BaseModel):
-    min_req_delay: float = 1.0
-    max_req_delay: float = 4.0
-    timeout: float = 20.0
-    reinit_session_every: int = 500
+    min_req_delay: Annotated[float, Field(default=1.0)]
+    max_req_delay: Annotated[float, Field(default=4.0)]
+    timeout: Annotated[float, Field(default=20.0)]
+    reinit_session_every: Annotated[int, Field(default=500)]
 
 
 class ScrapersSettings(BaseModel):
-    listing_scraper: ListingScraperSettings
-    vehicle_scraper: VehicleScraperSettings
+    listing_scraper: Annotated[ListingScraperSettings, Field()]
+    vehicle_scraper: Annotated[VehicleScraperSettings, Field()]
 
 
 class YamlConfigSettingsSource(PydanticBaseSettingsSource):
@@ -107,19 +97,19 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "carscout-pipe"
-    app_version: str = version("carscout-pipe")
-    environment: str = "local"
-    debug: bool = False
-    project_root: str = str(PROJECT_ROOT)
+    app_name: Annotated[str, Field(default="carscout-pipe")]
+    app_version: Annotated[str, Field(default=version("carscout-pipe"))]
+    environment: Annotated[str, Field(default="local")]
+    debug: Annotated[bool, Field(default=False)]
+    project_root: Annotated[str, Field(default=str(PROJECT_ROOT))]
 
-    file_service: FileServiceSettings
-    logging: LoggingSettings
-    resources: ResourcesSettings
-    webdriver: WebdriverSettings
-    http: HttpSettings
-    database: DatabaseSettings
-    scrapers: ScrapersSettings
+    file_service: Annotated[FileServiceSettings, Field()]
+    logging: Annotated[LoggingSettings, Field()]
+    resources: Annotated[ResourcesSettings, Field()]
+    webdriver: Annotated[WebdriverSettings, Field()]
+    http: Annotated[HttpSettings, Field()]
+    database: Annotated[DatabaseSettings, Field()]
+    scrapers: Annotated[ScrapersSettings, Field()]
 
     @classmethod
     def settings_customise_sources(
