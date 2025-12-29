@@ -5,7 +5,7 @@ from datetime import datetime
 from airflow import DAG
 from airflow.exceptions import AirflowSkipException
 from airflow.operators.python import PythonOperator
-from infra.bootstrap import bootstrap_container
+from infra.containers import Container
 
 
 def prepare_run(**context):
@@ -18,7 +18,7 @@ def prepare_run(**context):
 
 def get_brands(**context):
     """Loads brands from seed file and returns them as a list of dicts for mapping."""
-    container = bootstrap_container()
+    container = Container.create_and_patch()
     brand_service = container.brand_service()
     brand_service.read_brands()
     brands = brand_service.load_brands()
@@ -38,7 +38,7 @@ def process_listings(brand_dict: dict, **context):
     brand = Brand(**brand_dict)
 
     # init container and services
-    container = bootstrap_container()
+    container = Container.create_and_patch()
     logger = container.logger_factory().create(f"airflow.listings.{brand.slug}")
     listing_scraper = container.listing_scraper()
     listing_service = container.listing_service()
@@ -91,7 +91,7 @@ def process_vehicles(**context):
         raise AirflowSkipException("No run_id found, skipping vehicle processing")
 
     # init container and services
-    container = bootstrap_container()
+    container = Container.create_and_patch()
     logger = container.logger_factory().create("airflow.process_vehicles")
     vehicle_scraper = container.vehicle_scraper()
     listing_service = container.listing_service()

@@ -116,3 +116,11 @@ class Container(containers.DeclarativeContainer):
         timeout=config.scrapers.vehicle_scraper.timeout,
         reinit_session_every=config.scrapers.vehicle_scraper.reinit_session_every,
     )
+
+    @classmethod
+    def create_and_patch(cls) -> "Container":
+        from infra.settings import Settings
+
+        container = cls()
+        container.config.from_pydantic(Settings())
+        return container
