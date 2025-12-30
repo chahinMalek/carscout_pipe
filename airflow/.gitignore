@@ -1,0 +1,10 @@
+*
+!.gitignore
+!dags/*
+dags/*
+!dags/*.py
+!logs/
+!logs/.gitkeep
+!plugins/
+!plugins/.gitkeep
+!Dockerfile
