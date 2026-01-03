@@ -1,93 +1,110 @@
-# CarScout Pipeline
+# 🚗 CarScout Pipeline
 
-Local web scraping pipeline for vehicle listings published on [olx.ba](https://olx.ba).
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue?style=flat&logo=python&logoColor=white)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Code Style](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-## Overview
+**Local Web Scraping Pipeline for Vehicle Listings**
 
-CarScout Pipeline extracts, processes, and stores vehicle listing data through a two-stage scraping workflow:
-
-1. **Listings Stage**: Scrapes listing metadata (title, price, URL) for each vehicle brand
-2. **Vehicles Stage**: Extracts detailed vehicle specifications from individual listing pages
-
-All scraping runs are tracked via `run_id` for data lineage, reproducibility, and batch processing. The pipeline includes built-in metadata tracking for monitoring progress, error rates, and success metrics.
+[Overview](#-overview) • [Features](#-features) • [Architecture](#-architecture) • [Getting Started](#-getting-started) • [Contributing](#-contributing)
 
 ---
 
-## Architecture
+## 📖 Overview
 
-- **Clean Architecture**: Clear separation of business logic (`core/`) from infrastructure (`infra/`)
-- **Dependency Injection**: Container-based DI using `dependency-injector`
-- **Repository Pattern**: Protocol-based repository interfaces with SQLAlchemy implementations
-- **Workflow Orchestration**: Apache Airflow DAGs for scheduling, retries, and observability
-- **Entity-First Design**: Domain entities modeled as dataclasses with business rules
-- **Resilient Scraping**:
-  - Selenium with stealth mode for JavaScript-heavy listing pages
-  - Resilient HTTP clients with session management and retries for API endpoints
-  - Configurable delays and timeouts to respect rate limits
+**CarScout Pipeline** is a robust, local-first solution designed to scrape, process, and catalogue vehicle listings from [olx.ba](https://olx.ba). Built with modern Python practices, it leverages **Apache Airflow** for orchestration and **Selenium/HTTPX** for resilient data extraction.
 
----
+It solves the problem of ephemeral listing data by building a historic dataset of vehicle pricing and specifications for market analysis.
 
-## Tech Stack
+## ✨ Features
 
-- **Python 3.11+** with [uv](https://github.com/astral-sh/uv) for dependency management
-- **Apache Airflow** for orchestration and execution
-- **SQLAlchemy** for database access
-- **Selenium** (Listings) & **Requests/HTTPX** (Vehicle Data)
-- **Docker & Docker Compose** for local orchestration (Airflow, database, browser tooling)
-- **SQLite** for zero-setup local storage
+- **🛡 Resilient Scraping**: Hybrid approach using Selenium (for JS-heavy listings) and HTTPX (for fast API/HTML retrieval), with built-in retries and session management.
+- **🏗 Clean Architecture**: Strict separation of concerns keeping domain logic (`core`) isolated from infrastructure (`infra`).
+- **🧩 Modular Design**: Fully containerized with dependency injection via `dependency-injector`.
+- **⚙️ Orchestrated Workflows**: Apache Airflow DAGs manage the two-stage pipeline (Listings → Vehicles) with error tracking and backfills.
+- **💾 Relational Storage**: Data is structured and validated before storage in SQLite (scalable to Postgres).
 
----
+## 🏗 Architecture
 
-## Quick Start
+```mermaid
+graph TD
+    subgraph "Orchestration (Airflow)"
+        DAG[Pipeline DAG]
+        ListingTask[Scrape Listings]
+        VehicleTask[Scrape Vehicle Details]
+    end
+
+    subgraph "Core Domain"
+        Service[Scraping Service]
+        Entities[Data Entities]
+    end
+
+    subgraph "Infrastructure"
+        Repo[SQLAlchemy Repository]
+        Browser[Selenium WebDriver]
+        DB[(Database)]
+    end
+
+    DAG --> ListingTask & VehicleTask
+    ListingTask --> Service
+    VehicleTask --> Service
+    Service --> Browser
+    Service --> Repo
+    Repo --> DB
+```
+
+## 📂 Project Structure
+
+```text
+carscout_pipe/
+├── 📂 airflow/       # Airflow DAGs and plugins
+├── 📂 core/          # Domain entities, services, and interfaces
+│   ├── entities/
+│   ├── services/
+│   └── repositories/ # Abstract repository definitions
+├── 📂 infra/         # Infrastructure implementations
+│   ├── db/           # Database models and sessions
+│   ├── scraping/     # Selenium/HTTPX drivers
+│   └── containers.py # Dependency storage
+├── 📂 tests/         # Pytest suite
+└── 📄 docker-compose.yml
+```
+
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- Python 3.11+
-- [uv](https://github.com/astral-sh/uv)
-- Docker (required for Airflow-based execution)
+*   **Python 3.11+**
+*   **Docker**
+*   **uv** (recommended for package management)
 
 ### Installation
 
-1. **Clone the repository and install dependencies**
-   ```bash
-   git clone <repository-url>
-   cd carscout_pipe
-   uv sync
-   ```
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/your-username/carscout_pipe.git
+    cd carscout_pipe
+    ```
 
-2. **Configure Environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env if needed (default local settings usually work out of the box)
-   ```
+2.  **Setup Environment**:
+    ```bash
+    uv sync
+    cp .env.example .env
+    ```
 
-3. **Start Airflow**
-   ```bash
-   docker-compose up -d
-   ```
+3.  **Launch the Pipeline**:
+    ```bash
+    docker-compose up -d
+    ```
+    Access Airflow at `http://localhost:8080` (User/Pass: `admin`/`admin`).
 
-4. **Access Airflow UI**
-   - Open `http://localhost:8080`
-   - Login with `admin` / `admin`
-   - Enable and trigger the `carscout_pipeline` DAG
+## 🗺 Roadmap
 
----
+Check out our [ROADMAP.md](docs/ROADMAP.md) for planned features and future improvements.
 
-## Roadmap
+## 🤝 Contributing
 
-### Improvements
-- **Architecture**: Upgrade to SQLAlchemy 2.0+ & add Alembic migrations
-- **Observability**: Improve error handling and observability in DAG
-- **CI/CD**: GitHub Actions CI workflow
-- **Quality**: Add badges (tests, coverage, code quality) & architecture diagram
+Looking to contribute to CarScout Pipeline? Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on how to get started.
 
-### Planned Features
-- **Interface**: Simple CLI entrypoint & Streamlit dashboard
-- **Proxies**: Integrating proxy providers (opt-in via configs)
-  - Adapters for ZenRows, ScrapingBee, and custom lists
-  - Health checks and automatic fallback capabilities
-- **Data**: Add data export capabilities (CSV, JSON, Parquet)
+## 📄 License
 
-### Potential Features
-- **Modernization**: Migration to Playwright for faster scraping
-- **Storage**: DuckDB alternative for analytical queries
+Distributed under the MIT License. See `LICENSE` for more information.
