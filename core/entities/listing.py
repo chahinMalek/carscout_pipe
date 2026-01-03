@@ -24,7 +24,7 @@ class Listing:
             self.visited_at = datetime.datetime.fromisoformat(self.visited_at)
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'Listing':
+    def from_dict(cls, data: dict) -> "Listing":
         field_names = {f.name for f in fields(cls)}
         _d = {k: v for k, v in data.items() if k in field_names}
         return cls(**_d)

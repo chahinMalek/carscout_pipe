@@ -1,4 +1,4 @@
-from typing import Protocol, Any, Optional
+from typing import Any, Protocol
 
 
 class HttpClient(Protocol):
@@ -10,9 +10,9 @@ class HttpClient(Protocol):
         self,
         url: str,
         *,
-        params: Optional[dict] = None,
-        headers: Optional[dict] = None,
-        timeout: Optional[float] = None,
+        params: dict | None = None,
+        headers: dict | None = None,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> Any: ...
 
@@ -20,10 +20,10 @@ class HttpClient(Protocol):
         self,
         url: str,
         *,
-        data: Optional[Any] = None,
-        json: Optional[Any] = None,
-        headers: Optional[dict] = None,
-        timeout: Optional[float] = None,
+        data: Any | None = None,
+        json: Any | None = None,
+        headers: dict | None = None,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> Any: ...
 
@@ -31,10 +31,10 @@ class HttpClient(Protocol):
         self,
         url: str,
         *,
-        data: Optional[Any] = None,
-        json: Optional[Any] = None,
-        headers: Optional[dict] = None,
-        timeout: Optional[float] = None,
+        data: Any | None = None,
+        json: Any | None = None,
+        headers: dict | None = None,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> Any: ...
 
@@ -42,8 +42,8 @@ class HttpClient(Protocol):
         self,
         url: str,
         *,
-        headers: Optional[dict] = None,
-        timeout: Optional[float] = None,
+        headers: dict | None = None,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> Any: ...
 
@@ -51,10 +51,10 @@ class HttpClient(Protocol):
         self,
         url: str,
         *,
-        data: Optional[Any] = None,
-        json: Optional[Any] = None,
-        headers: Optional[dict] = None,
-        timeout: Optional[float] = None,
+        data: Any | None = None,
+        json: Any | None = None,
+        headers: dict | None = None,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> Any: ...
 

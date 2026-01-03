@@ -1,5 +1,5 @@
-from infra.interfaces.cookie_provider import CookieProvider
 from infra.factory.webdriver import WebdriverFactory
+from infra.interfaces.cookie_provider import CookieProvider
 
 
 class WebdriverCookieProvider(CookieProvider):
@@ -14,8 +14,7 @@ class WebdriverCookieProvider(CookieProvider):
             driver.get(url)
             retrieved_cookies = driver.get_cookies()
             provide_cookies = [
-                {"name": cookie["name"], "value": cookie["value"]}
-                for cookie in retrieved_cookies
+                {"name": cookie["name"], "value": cookie["value"]} for cookie in retrieved_cookies
             ]
             return provide_cookies
         finally:

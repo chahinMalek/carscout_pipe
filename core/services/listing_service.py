@@ -3,7 +3,6 @@ from core.repositories.listing_repository import ListingRepository
 
 
 class ListingService:
-
     def __init__(self, repo: ListingRepository):
         self.repo = repo
 

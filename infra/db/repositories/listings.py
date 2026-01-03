@@ -1,12 +1,12 @@
 import datetime
 
-from core.repositories.listing_repository import ListingRepository
+from sqlalchemy import select
+
 from core.entities.listing import Listing
+from core.repositories.listing_repository import ListingRepository
 from infra.db.models.listing import ListingModel
 from infra.db.models.vehicle import VehicleModel
 from infra.db.service import DatabaseService
-
-from sqlalchemy import select
 
 
 class SqlAlchemyListingRepository(ListingRepository):
@@ -68,9 +68,7 @@ class SqlAlchemyListingRepository(ListingRepository):
     def find_latest_run(self) -> str | None:
         """Returns the run_id of the most recently inserted listing record."""
         with self.db_service.create_session() as session:
-            query = (
-                select(ListingModel).order_by(ListingModel.visited_at.desc()).limit(1)
-            )
+            query = select(ListingModel).order_by(ListingModel.visited_at.desc()).limit(1)
             result = session.scalars(query).first()
             return result.run_id if result else None
 
@@ -94,9 +92,9 @@ class SqlAlchemyListingRepository(ListingRepository):
             return [self._convert_orm_to_entity(orm) for orm in result]
 
     def search_at(self, date: datetime.datetime) -> list[Listing]:
-        pass
+        raise NotImplementedError("Search by date is not yet implemented.")
 
     def search_between(
         self, date_from: datetime.datetime, date_to: datetime.datetime
     ) -> list[Listing]:
-        pass
+        raise NotImplementedError("Search by date range is not yet implemented.")

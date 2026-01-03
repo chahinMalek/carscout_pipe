@@ -40,6 +40,7 @@ class VehicleScraper(Scraper):
         try:
             http_client = self._http_client_factory.create()
             for idx, listing in enumerate(listings, start=1):
+                vehicle = None
                 try:
                     if idx % self._reinit_session_every == 0:
                         self._logger.info("Reinit http client session ...")

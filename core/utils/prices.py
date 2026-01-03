@@ -1,4 +1,3 @@
-
 def parse_price_str(price_str: str) -> tuple[float, str] | None:
     """
     Parses the price string and returns a tuple of (amount, currency) if possible.

@@ -3,7 +3,6 @@ from core.repositories.vehicle_repository import VehicleRepository
 
 
 class VehicleService:
-
     def __init__(self, repo: VehicleRepository):
         self.repo = repo
 

@@ -1,4 +1,3 @@
-
 class PageNotFoundError(Exception):
     """Raised when a page cannot be found during scraping."""
 

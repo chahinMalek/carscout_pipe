@@ -1,5 +1,6 @@
-from infra.containers import Container
 from worker.tasks import pipeline
+
+from infra.containers import Container
 
 
 def main():

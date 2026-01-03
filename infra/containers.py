@@ -2,9 +2,11 @@ from dependency_injector import containers, providers
 
 from core.services.brand_service import BrandService
 from core.services.listing_service import ListingService
+from core.services.run_service import RunService
 from core.services.vehicle_service import VehicleService
 from infra.db.models.base import Base
 from infra.db.repositories.listings import SqlAlchemyListingRepository
+from infra.db.repositories.runs import SqlAlchemyRunRepository
 from infra.db.repositories.vehicles import SqlAlchemyVehicleRepository
 from infra.db.service import DatabaseService
 from infra.factory.clients.http import ClientType, HttpClientFactory
@@ -39,6 +41,10 @@ class Container(containers.DeclarativeContainer):
     )
     vehicle_repository = providers.Singleton(
         SqlAlchemyVehicleRepository,
+        db_service=db_service,
+    )
+    run_repository = providers.Singleton(
+        SqlAlchemyRunRepository,
         db_service=db_service,
     )
 
@@ -95,6 +101,10 @@ class Container(containers.DeclarativeContainer):
     vehicle_service = providers.Singleton(
         VehicleService,
         repo=vehicle_repository,
+    )
+    run_service = providers.Singleton(
+        RunService,
+        repo=run_repository,
     )
 
     # scrapers

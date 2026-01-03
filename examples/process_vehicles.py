@@ -1,5 +1,6 @@
-from infra.containers import Container
 from worker.tasks import process_vehicles
+
+from infra.containers import Container
 
 
 def main():

@@ -25,6 +25,12 @@ def carscout_pipeline():
         run_id = context.get("dag_run").conf.get("run_id") if context.get("dag_run") else None
         if run_id is None:
             run_id = str(uuid.uuid4())
+
+        # init run tracking
+        container = Container.create_and_patch()
+        run_service = container.run_service()
+        run_service.start_run(run_id)
+
         return run_id
 
     @task
@@ -54,6 +60,7 @@ def carscout_pipeline():
         logger = container.logger_factory().create(f"airflow.listings.{brand.slug}")
         listing_scraper = container.listing_scraper()
         listing_service = container.listing_service()
+        run_service = container.run_service()
 
         logger.info(f"Processing brand: {brand.slug}")
 
@@ -70,10 +77,15 @@ def carscout_pipeline():
                 except Exception as err:
                     logger.error(f"Failed to insert listing.id={listing.id}: {err}", exc_info=True)
                     failed_listings += 1
+                    run_service.update_metrics(task_run_id, num_errors=1)
 
             logger.info(f"Completed {brand.name}: {success_listings} listings")
+            run_service.update_metrics(task_run_id, num_listings=success_listings)
+
         except Exception as err:
             logger.error(f"Failed to process {brand.slug}: {err}", exc_info=True)
+            # don't fail the run here, just log the error and increment error count
+            run_service.update_metrics(task_run_id, errors=1)
             raise
 
         return {
@@ -98,6 +110,7 @@ def carscout_pipeline():
         vehicle_scraper = container.vehicle_scraper()
         listing_service = container.listing_service()
         vehicle_service = container.vehicle_service()
+        run_service = container.run_service()
 
         # retrieve listings without vehicles for the given task_run_id
         logger.info(f"Retrieving listings for task_run_id={task_run_id}")
@@ -107,6 +120,7 @@ def carscout_pipeline():
         if not listings:
             msg = "No listings to process"
             logger.info(msg)
+            run_service.complete_run(task_run_id)
             raise AirflowSkipException(msg)
 
         # process each listing to scrape and store vehicle data
@@ -129,6 +143,11 @@ def carscout_pipeline():
                     f"Failed to insert vehicle.listing_id={vehicle.id}: {err}", exc_info=True
                 )
                 failed += 1
+                run_service.update_metrics(task_run_id, num_errors=1)
+
+        # update run metrics
+        run_service.update_metrics(task_run_id, num_vehicles=success, num_errors=failed)
+        run_service.complete_run(task_run_id)
 
         # push results to xcom for subsequent tasks
         result = {

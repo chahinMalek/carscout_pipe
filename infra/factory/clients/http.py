@@ -35,9 +35,7 @@ class HttpClientFactory:
         else:  # by default returns a requests.Session object
             return self._create_requests_session(self._headers, cookies)
 
-    def _create_requests_session(
-        self, headers: dict, cookies: list[dict]
-    ) -> requests.Session:
+    def _create_requests_session(self, headers: dict, cookies: list[dict]) -> requests.Session:
         session = requests.Session()
         session.headers.update(headers)
         for cookie in cookies:

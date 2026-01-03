@@ -6,7 +6,6 @@ from core.utils.prices import parse_price_str
 
 @dataclass
 class Vehicle:
-
     # listing fields
     id: str
     url: str
@@ -123,7 +122,7 @@ class Vehicle:
             self.last_visited_at = datetime.datetime.fromisoformat(self.last_visited_at)
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'Vehicle':
+    def from_dict(cls, data: dict) -> "Vehicle":
         field_names = {f.name for f in fields(cls)}
         _d = {k: v for k, v in data.items() if k in field_names}
         return cls(**_d)
