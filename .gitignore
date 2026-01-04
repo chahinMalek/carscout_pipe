@@ -208,3 +208,6 @@ data/
 
 # Temporary files
 tmp/
+
+# Alembic migrations (temporarily ignored)
+migrations/versions/

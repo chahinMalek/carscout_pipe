@@ -24,7 +24,7 @@ webdriver:
   timeout_seconds: 30
 
 database:
-  url: "sqlite:///data/carscout_251204.db"
+  url: "sqlite:///data/db/carscout.db"
   echo: false
 
 http:

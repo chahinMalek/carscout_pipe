@@ -11,4 +11,4 @@ class DatabaseService:
         return self.session_local()
 
     def create_all_tables(self, base):
-        base.metadata.create_all(self.engine)
+        pass
