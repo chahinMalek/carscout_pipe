@@ -1,8 +1,6 @@
 import datetime
 from dataclasses import dataclass, fields
 
-from core.utils.prices import parse_price_str
-
 
 @dataclass
 class Vehicle:
@@ -126,9 +124,6 @@ class Vehicle:
         field_names = {f.name for f in fields(cls)}
         _d = {k: v for k, v in data.items() if k in field_names}
         return cls(**_d)
-
-    def parsed_price(self) -> tuple[float, str] | None:
-        return parse_price_str(self.price)
 
     def timedelta_since_visit(self) -> datetime.timedelta | None:
         if self.last_visited_at is None:
