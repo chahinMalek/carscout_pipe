@@ -113,7 +113,10 @@ def carscout_pipeline():
 
         # init container and services
         container = Container.create_and_patch()
-        logger = container.logger_factory().create(f"airflow.listings.{brand.slug}")
+        logger = container.logger_factory().create(
+            f"airflow.listings.{brand.slug}",
+            context={"run_id": task_run_id, "brand": brand.slug},
+        )
         listing_scraper = container.listing_scraper()
         listing_service = container.listing_service()
         run_service = container.run_service()
@@ -162,7 +165,10 @@ def carscout_pipeline():
 
         # init container and services
         container = Container.create_and_patch()
-        logger = container.logger_factory().create("airflow.process_vehicles")
+        logger = container.logger_factory().create(
+            "airflow.process_vehicles",
+            context={"run_id": task_run_id},
+        )
         vehicle_scraper = container.vehicle_scraper()
         listing_service = container.listing_service()
         vehicle_service = container.vehicle_service()

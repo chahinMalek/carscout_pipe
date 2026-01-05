@@ -9,7 +9,7 @@ from infra.factory.logger import LoggerFactory
 class TestLoggerFactory:
     def test_create(self):
         factory = LoggerFactory(
-            format="%(name)s - %(levelname)s - %(message)s",
+            format_str="%(name)s - %(levelname)s - %(message)s",
             log_level=logging.INFO,
         )
         logger = factory.create("test_logger")
@@ -20,7 +20,7 @@ class TestLoggerFactory:
 
     def test_logger_can_log_messages(self):
         factory = LoggerFactory(
-            format="%(name)s - %(message)s",
+            format_str="%(name)s - %(message)s",
             log_level=logging.DEBUG,
         )
         logger = factory.create("test_logger_logging")
@@ -31,7 +31,7 @@ class TestLoggerFactory:
 
     def test_create_multiple(self):
         factory = LoggerFactory(
-            format="%(message)s",
+            format_str="%(message)s",
             log_level=logging.INFO,
         )
         logger1 = factory.create("logger1")
@@ -43,7 +43,7 @@ class TestLoggerFactory:
 
     def test_logger_does_not_duplicate_handlers(self):
         factory = LoggerFactory(
-            format="%(message)s",
+            format_str="%(message)s",
             log_level=logging.INFO,
         )
         logger1 = factory.create("test_logger")

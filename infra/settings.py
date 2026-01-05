@@ -11,13 +11,16 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class FileServiceSettings(BaseModel):
-    type: Annotated[Literal["local", "s3"], Field(default="local")]
+    type: Annotated[str, Field(default="local")]
     basedir: Annotated[str | None, Field(default=None)]
 
 
 class LoggingSettings(BaseModel):
     log_level: Annotated[int, Field(default=10)]
-    format: Annotated[str, Field(default="%(name)s - %(asctime)s - %(levelname)s - %(message)s")]
+    format_str: Annotated[
+        str, Field(default="%(name)s - %(asctime)s - %(levelname)s - %(message)s")
+    ]
+    use_json: Annotated[bool, Field(default=False)]
 
 
 class ResourcesSettings(BaseModel):

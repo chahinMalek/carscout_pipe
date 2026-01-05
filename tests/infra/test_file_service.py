@@ -12,7 +12,7 @@ from infra.io.file_service import LocalFileService
 class TestLocalFileService:
     @pytest.fixture
     def logger_factory(self):
-        return LoggerFactory(format="%(name)s - %(message)s", log_level=20)
+        return LoggerFactory(format_str="%(name)s - %(message)s", log_level=20)
 
     @pytest.fixture
     def temp_dir(self):

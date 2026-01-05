@@ -52,7 +52,8 @@ class Container(containers.DeclarativeContainer):
     logger_factory = providers.Singleton(
         LoggerFactory,
         log_level=config.logging.log_level.as_int(),
-        format=config.logging.format,
+        format_str=config.logging.format_str,
+        use_json=config.logging.use_json,
     )
     webdriver_factory = providers.Singleton(
         WebdriverFactory,

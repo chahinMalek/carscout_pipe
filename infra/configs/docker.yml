@@ -5,15 +5,15 @@ file_service:
 
 logging:
   format_str: "%(name)s - %(asctime)s - %(levelname)s - %(message)s"
-  use_json: false
+  use_json: true
 
 resources:
-  brands: resources/seeds/brands.csv
-#  brands: resources/seeds/brands_tiny.csv
+  brands: "/opt/app/resources/seeds/brands.csv"
+#  brands: "/opt/app/resources/seeds/brands_tiny.csv"
 
 webdriver:
-  chrome_binary_path:
-  chromedriver_path:
+  chrome_binary_path: "/usr/bin/chromium"
+  chromedriver_path: "/usr/bin/chromedriver"
   chrome_options:
     - "--disable-blink-features=AutomationControlled"
     - "--blink-settings=imagesEnabled=false"
@@ -25,7 +25,7 @@ webdriver:
   timeout_seconds: 30
 
 database:
-  url: "sqlite:///data/db/carscout.db"
+  url: "sqlite:////opt/app/data/db/carscout.db"
   echo: false
 
 http:
