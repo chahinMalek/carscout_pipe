@@ -102,12 +102,12 @@ carscout_pipe/
 
 ## 🗺 Roadmap
 
-Check out our [ROADMAP.md](docs/ROADMAP.md) for planned features and future improvements.
+Check out our [ROADMAP](docs/ROADMAP.md) for planned features and future improvements.
 
 ## 🤝 Contributing
 
-Looking to contribute to CarScout Pipeline? Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on how to get started.
+Looking to contribute to CarScout Pipeline? Please see [CONTRIBUTING](docs/CONTRIBUTING.md) for details on how to get started.
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
