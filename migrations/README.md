@@ -30,12 +30,12 @@ graph TD
     Base -.-> Env
     Ini --> Env
 
-    Env -- "revision --autogenerate" --> Versions
+    Env -->|revision --autogenerate| Versions
     Versions --> Scripts
-    Scripts -- "upgrade head" --> DB
+    Scripts -->|upgrade head| DB
     DB --> VersionTable
 
-    DB -- "Schema Inspection" -.-> Env
+    DB -.->|Schema Inspection| Env
 ```
 
 ## 🚀 Usage Guide
