@@ -3,6 +3,9 @@ from unittest.mock import Mock
 import pytest
 
 from infra.db.models.base import Base
+from infra.db.models.listing import ListingModel  # noqa
+from infra.db.models.run import RunModel  # noqa
+from infra.db.models.vehicle import VehicleModel  # noqa
 from infra.db.service import DatabaseService
 from infra.factory.logger import LoggerFactory
 
@@ -17,6 +20,6 @@ def mock_logger_factory():
 @pytest.fixture
 def in_memory_db():
     db_service = DatabaseService("sqlite:///:memory:", echo=False)
-    db_service.create_all_tables(Base)
+    Base.metadata.create_all(db_service.engine)
     yield db_service
     db_service.engine.dispose()

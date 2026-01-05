@@ -3,22 +3,14 @@ from datetime import datetime
 import pytest
 
 from core.entities.run import Run
-from infra.db.models.run import RunModel
 from infra.db.repositories.runs import SqlAlchemyRunRepository
-from infra.db.service import DatabaseService
 
 
+@pytest.mark.integration
 class TestSqlAlchemyRunRepository:
-    @pytest.fixture(scope="function")
-    def db_service(self):
-        db_service = DatabaseService("sqlite:///:memory:")
-        db_service.Base = RunModel
-        db_service.create_all_tables(RunModel)
-        return db_service
-
-    @pytest.fixture(scope="function")
-    def repo(self, db_service):
-        return SqlAlchemyRunRepository(db_service)
+    @pytest.fixture
+    def repo(self, in_memory_db):
+        return SqlAlchemyRunRepository(in_memory_db)
 
     def test_add_run(self, repo):
         run = Run(id="test-run-1", started_at=datetime.utcnow())
