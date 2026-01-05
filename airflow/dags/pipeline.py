@@ -1,10 +1,61 @@
 import uuid
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
 from airflow.exceptions import AirflowSkipException
 from infra.containers import Container
+
+
+def on_pipeline_failure(context):
+    """
+    Callback triggered when the DAG run fails.
+    Ensures the 'runs' table reflects the failure and records the error message.
+    """
+    dag_run = context.get("dag_run")
+
+    # pull run_id from 'prepare_run' return value
+    ti = dag_run.get_task_instance("prepare_run")
+    run_id = ti.xcom_pull() if ti else None
+
+    if not run_id:
+        # nothing to do if run_id is not found
+        return
+
+    container = Container.create_and_patch()
+    run_service = container.run_service()
+
+    # identify which task failed
+    failed_ti = context.get("task_instance")
+    task_id = failed_ti.task_id if failed_ti else "unknown"
+    exception = context.get("exception")
+    map_index = failed_ti.map_index if failed_ti else None
+
+    err_msg = (
+        f"Pipeline failed at task: {task_id} (index: {map_index})."
+        if map_index is not None
+        else f". Error: {str(exception)}"
+        if exception
+        else ""
+    )
+    run_service.fail_run(run_id, err_msg)
+
+
+def on_pipeline_success(context):
+    """
+    Callback triggered when the entire DAG completes successfully.
+    """
+    dag_run = context.get("dag_run")
+    ti = dag_run.get_task_instance("prepare_run")
+    run_id = ti.xcom_pull() if ti else None
+
+    if not run_id:
+        # nothing to do if run_id is not found
+        return
+
+    container = Container.create_and_patch()
+    run_service = container.run_service()
+    run_service.complete_run(run_id)
 
 
 @dag(
@@ -15,12 +66,14 @@ from infra.containers import Container
     max_active_runs=1,
     default_args={"retries": 2},
     tags=["scraping", "vehicles"],
+    on_failure_callback=on_pipeline_failure,
+    on_success_callback=on_pipeline_success,
 )
 def carscout_pipeline():
     @task
     def prepare_run(**context):
         """
-        generates or reuses run_id and returns it
+        Generates or reuses run_id and returns it. Helps track the pipeline run.
         """
         run_id = context.get("dag_run").conf.get("run_id") if context.get("dag_run") else None
         if run_id is None:
@@ -36,19 +89,22 @@ def carscout_pipeline():
     @task
     def get_brands():
         """
-        loads brands from seed file and returns them as a list of dicts for mapping
+        Loads brands from seed file and returns them as a list of dicts for mapping.
         """
         container = Container.create_and_patch()
         brand_service = container.brand_service()
         brand_service.read_brands()
         brands = brand_service.load_brands()
-        # Convert dataclasses to dicts for XCom serialization
+        # convert dataclasses to dicts for xcom serialization
         return [asdict(b) for b in brands]
 
-    @task(max_active_tis_per_dag=1)
+    @task(
+        max_active_tis_per_dag=1,
+        execution_timeout=timedelta(minutes=30),
+    )
     def process_listings(brand_dict: dict, task_run_id: str):
         """
-        processes listings for a single brand
+        Processes listings for a single brand.
         """
 
         from core.entities.brand import Brand
@@ -63,7 +119,6 @@ def carscout_pipeline():
         run_service = container.run_service()
 
         logger.info(f"Processing brand: {brand.slug}")
-
         success_listings = 0
         failed_listings = 0
 
@@ -84,9 +139,10 @@ def carscout_pipeline():
 
         except Exception as err:
             logger.error(f"Failed to process {brand.slug}: {err}", exc_info=True)
-            # don't fail the run here, just log the error and increment error count
-            run_service.update_metrics(task_run_id, errors=1)
+            # Re-raise so the failure callback can catch it
+            run_service.update_metrics(task_run_id, num_errors=1)
             raise
+            # Note: we can also skip throwing an exception and let the pipeline continue
 
         return {
             "brand": brand.slug,
@@ -102,7 +158,7 @@ def carscout_pipeline():
         Processes all identified listings to scrape and store vehicle data.
         """
         if not task_run_id:
-            raise AirflowSkipException("No task_run_id found, skipping vehicle processing")
+            raise AirflowSkipException("No task_run_id found, skipping vehicle processing.")
 
         # init container and services
         container = Container.create_and_patch()
@@ -118,9 +174,8 @@ def carscout_pipeline():
         logger.info(f"Found {len(listings)} listings for task_run_id={task_run_id}")
 
         if not listings:
-            msg = "No listings to process"
+            msg = "No listings to process."
             logger.info(msg)
-            run_service.complete_run(task_run_id)
             raise AirflowSkipException(msg)
 
         # process each listing to scrape and store vehicle data
@@ -147,7 +202,6 @@ def carscout_pipeline():
 
         # update run metrics
         run_service.update_metrics(task_run_id, num_vehicles=success, num_errors=failed)
-        run_service.complete_run(task_run_id)
 
         # push results to xcom for subsequent tasks
         result = {
@@ -159,6 +213,20 @@ def carscout_pipeline():
         }
         return result
 
+    @task(
+        trigger_rule="all_done",  # ensures the task runs even if some brands failed
+    )
+    def summarize_run(vehicle_results: dict):
+        container = Container.create_and_patch()
+        logger = container.logger_factory().create("airflow.summarize")
+
+        logger.info("--- RUN SUMMARY ---")
+        logger.info(f"Run ID: {vehicle_results['run_id']}")
+        logger.info(f"Total Number of Listings: {vehicle_results['total_listings']}")
+        logger.info(f"Total Listings Processed: {vehicle_results['processed_listings']}")
+        logger.info(f"Total Vehicles Scraped: {vehicle_results['success_listings']}")
+        logger.info(f"Total Vehicles Failed: {vehicle_results['failed_listings']}")
+
     # orchestration flow
     task_run_id = prepare_run()
     brands = get_brands()
@@ -167,7 +235,10 @@ def carscout_pipeline():
     listings_stats = process_listings.partial(task_run_id=task_run_id).expand(brand_dict=brands)
 
     # process vehicles after listings are done
-    process_vehicles(task_run_id=task_run_id, listing_results=listings_stats)
+    vehicle_results = process_vehicles(task_run_id=task_run_id, listing_results=listings_stats)
+
+    # summarize run
+    summarize_run(vehicle_results)
 
 
 # instantiate the DAG
