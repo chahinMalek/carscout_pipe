@@ -65,7 +65,6 @@ def on_pipeline_success(context):
     catchup=False,
     max_active_runs=1,
     default_args={"retries": 2},
-    tags=["scraping", "vehicles"],
     on_failure_callback=on_pipeline_failure,
     on_success_callback=on_pipeline_success,
 )
@@ -75,13 +74,24 @@ def carscout_pipeline():
         """
         Generates or reuses run_id and returns it. Helps track the pipeline run.
         """
+        import json
+
         run_id = context.get("dag_run").conf.get("run_id") if context.get("dag_run") else None
         if run_id is None:
             run_id = str(uuid.uuid4())
 
-        # init run tracking
+        # init container, services and database
         container = Container.create_and_patch()
+        container.init_db()
         run_service = container.run_service()
+
+        logger = container.logger_factory().create(
+            "airflow.prepare_run",
+            context={"run_id": run_id},
+        )
+        logger.info(f"Starting run: {run_id}")
+        logger.info(f"Using configuration: {json.dumps(container.config(), indent=2)}")
+
         run_service.start_run(run_id)
 
         return run_id
