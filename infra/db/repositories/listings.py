@@ -44,7 +44,7 @@ class SqlAlchemyListingRepository(ListingRepository):
     def exists(self, id: str) -> bool:
         with self.db_service.create_session() as session:
             query = select(ListingModel).filter_by(listing_id=id)
-            result = session.scalars(query).first()
+            result = session.execute(query).scalars().first()
             return result is not None
 
     def find_latest(self, id: str) -> Listing | None:
@@ -55,21 +55,21 @@ class SqlAlchemyListingRepository(ListingRepository):
                 .order_by(ListingModel.visited_at.desc())
                 .limit(1)
             )
-            result = session.scalars(query).first()
+            result = session.execute(query).scalars().first()
             if result:
                 return self._convert_orm_to_entity(result)
 
     def find_all(self, id: str) -> list[Listing]:
         with self.db_service.create_session() as session:
             query = select(ListingModel).filter_by(listing_id=id)
-            result = session.scalars(query).all()
+            result = session.execute(query).scalars().all()
             return [self._convert_orm_to_entity(orm) for orm in result]
 
     def find_latest_run(self) -> str | None:
         """Returns the run_id of the most recently inserted listing record."""
         with self.db_service.create_session() as session:
             query = select(ListingModel).order_by(ListingModel.visited_at.desc()).limit(1)
-            result = session.scalars(query).first()
+            result = session.execute(query).scalars().first()
             return result.run_id if result else None
 
     def find_without_vehicle_by_run_id(self, run_id: str) -> list[Listing]:
@@ -88,7 +88,7 @@ class SqlAlchemyListingRepository(ListingRepository):
         """Returns a list of listings found for a given run_id."""
         with self.db_service.create_session() as session:
             query = select(ListingModel).filter_by(run_id=run_id)
-            result = session.scalars(query).all()
+            result = session.execute(query).scalars().all()
             return [self._convert_orm_to_entity(orm) for orm in result]
 
     def search_at(self, date: datetime.datetime) -> list[Listing]:

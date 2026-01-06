@@ -36,5 +36,5 @@ class SqlAlchemyVehicleRepository(VehicleRepository):
     def get(self, id: str) -> Vehicle | None:
         with self.db_service.create_session() as session:
             query = select(VehicleModel).filter_by(listing_id=id)
-            result = session.scalars(query).first()
+            result = session.execute(query).scalars().first()
             return self._convert_orm_to_entity(result) if result else None
