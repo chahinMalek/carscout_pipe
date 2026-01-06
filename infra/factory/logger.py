@@ -42,7 +42,7 @@ class LoggerFactory:
         logger = logging.getLogger(name)
         logger.setLevel(self._log_level)
 
-        if not logger.hasHandlers():
+        if not logger.handlers:
             console_handler = logging.StreamHandler(sys.stdout)
 
             if self._use_json:
@@ -57,6 +57,9 @@ class LoggerFactory:
 
             console_handler.setFormatter(formatter)
             logger.addHandler(console_handler)
+
+            # disable propagation to prevent enforcing airflow's formatting
+            logger.propagate = False
 
         # wrap with LoggerAdapter if context is provided
         if context:
