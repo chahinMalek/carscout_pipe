@@ -98,3 +98,9 @@ class SqlAlchemyListingRepository(ListingRepository):
         self, date_from: datetime.datetime, date_to: datetime.datetime
     ) -> list[Listing]:
         raise NotImplementedError("Search by date range is not yet implemented.")
+
+    def list_all(self, limit: int = 1000) -> list[Listing]:
+        with self.db_service.create_session() as session:
+            query = select(ListingModel).limit(limit)
+            result = session.execute(query).scalars().all()
+            return [self._convert_orm_to_entity(orm) for orm in result]

@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, Integer, String
 
+from core.entities.run import RunStatus
 from infra.db.models.base import Base
 
 
@@ -9,9 +10,9 @@ class RunModel(Base):
     __tablename__ = "runs"
 
     id = Column(String, primary_key=True)
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=datetime.now(UTC))
     completed_at = Column(DateTime, nullable=True)
-    status = Column(String, default="running")
+    status = Column(String, default=RunStatus.RUNNING.value)
     listings_scraped = Column(Integer, default=0)
     vehicles_scraped = Column(Integer, default=0)
     errors_count = Column(Integer, default=0)

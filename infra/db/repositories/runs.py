@@ -1,4 +1,6 @@
-from core.entities.run import Run
+from sqlalchemy import func, select
+
+from core.entities.run import Run, RunStatus
 from core.repositories.run_repository import RunRepository
 from infra.db.models.run import RunModel
 from infra.db.service import DatabaseService
@@ -12,7 +14,7 @@ class SqlAlchemyRunRepository(RunRepository):
         return Run(
             id=orm.id,
             started_at=orm.started_at,
-            status=orm.status,
+            status=RunStatus(orm.status),
             completed_at=orm.completed_at,
             listings_scraped=orm.listings_scraped,
             vehicles_scraped=orm.vehicles_scraped,
@@ -24,7 +26,7 @@ class SqlAlchemyRunRepository(RunRepository):
         return RunModel(
             id=entity.id,
             started_at=entity.started_at,
-            status=entity.status,
+            status=entity.status.value,
             completed_at=entity.completed_at,
             listings_scraped=entity.listings_scraped,
             vehicles_scraped=entity.vehicles_scraped,
@@ -61,3 +63,35 @@ class SqlAlchemyRunRepository(RunRepository):
             if result:
                 return self._convert_orm_to_entity(result)
             return None
+
+    def list_all(self, limit: int = 1000) -> list[Run]:
+        with self.db_service.create_session() as session:
+            query = select(RunModel).limit(limit)
+            result = session.execute(query).scalars().all()
+            return [self._convert_orm_to_entity(orm) for orm in result]
+
+    def search(
+        self,
+        status: str | None = None,
+        id_pattern: str | None = None,
+        offset: int = 0,
+        limit: int = 10,
+    ) -> tuple[list[Run], int]:
+        with self.db_service.create_session() as session:
+            query = select(RunModel)
+
+            if status:
+                query = query.filter(RunModel.status == status)
+            if id_pattern:
+                query = query.filter(RunModel.id.like(f"%{id_pattern}%"))
+
+            # Get total count before pagination
+            count_query = select(func.count()).select_from(query.subquery())
+            total_count = session.execute(count_query).scalar() or 0
+
+            # Apply ordering and pagination
+            query = query.order_by(RunModel.started_at.desc()).offset(offset).limit(limit)
+            result = session.execute(query).scalars().all()
+
+            entities = [self._convert_orm_to_entity(orm) for orm in result]
+            return entities, total_count
