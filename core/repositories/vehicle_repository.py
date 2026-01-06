@@ -11,8 +11,6 @@ class VehicleRepository(Protocol):
 
     def get(self, id: str) -> Vehicle: ...
 
-    def list_all(self, limit: int = 1000) -> list[Vehicle]: ...
-
     def search(
         self,
         listing_id: str | None = None,

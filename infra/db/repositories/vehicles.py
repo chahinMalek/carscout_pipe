@@ -40,12 +40,6 @@ class SqlAlchemyVehicleRepository(VehicleRepository):
             result = session.execute(query).scalars().first()
             return self._convert_orm_to_entity(result) if result else None
 
-    def list_all(self, limit: int = 1000) -> list[Vehicle]:
-        with self.db_service.create_session() as session:
-            query = select(VehicleModel).order_by(VehicleModel.last_visited_at.desc()).limit(limit)
-            result = session.execute(query).scalars().all()
-            return [self._convert_orm_to_entity(orm) for orm in result]
-
     def search(
         self,
         listing_id: str | None = None,

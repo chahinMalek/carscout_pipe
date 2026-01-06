@@ -91,12 +91,6 @@ class SqlAlchemyListingRepository(ListingRepository):
             result = session.execute(query).scalars().all()
             return [self._convert_orm_to_entity(orm) for orm in result]
 
-    def list_all(self, limit: int = 1000) -> list[Listing]:
-        with self.db_service.create_session() as session:
-            query = select(ListingModel).order_by(ListingModel.visited_at.desc()).limit(limit)
-            result = session.execute(query).scalars().all()
-            return [self._convert_orm_to_entity(orm) for orm in result]
-
     def search(
         self,
         listing_id: str | None = None,

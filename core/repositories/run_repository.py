@@ -10,8 +10,6 @@ class RunRepository(Protocol):
 
     def get(self, id: str) -> Run | None: ...
 
-    def list_all(self, limit: int = 1000) -> list[Run]: ...
-
     def search(
         self,
         status: str | None = None,

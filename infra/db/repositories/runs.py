@@ -64,12 +64,6 @@ class SqlAlchemyRunRepository(RunRepository):
                 return self._convert_orm_to_entity(result)
             return None
 
-    def list_all(self, limit: int = 1000) -> list[Run]:
-        with self.db_service.create_session() as session:
-            query = select(RunModel).limit(limit)
-            result = session.execute(query).scalars().all()
-            return [self._convert_orm_to_entity(orm) for orm in result]
-
     def search(
         self,
         status: str | None = None,

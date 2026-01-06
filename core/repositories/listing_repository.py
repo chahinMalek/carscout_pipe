@@ -19,8 +19,6 @@ class ListingRepository(Protocol):
 
     def search_with_run_id(self, run_id: str) -> list[Listing]: ...
 
-    def list_all(self, limit: int = 1000) -> list[Listing]: ...
-
     def search(
         self,
         listing_id: str | None = None,
