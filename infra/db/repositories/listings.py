@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import select
+from sqlalchemy import Integer, cast, func, select
 
 from core.entities.listing import Listing
 from core.repositories.listing_repository import ListingRepository
@@ -91,16 +91,66 @@ class SqlAlchemyListingRepository(ListingRepository):
             result = session.execute(query).scalars().all()
             return [self._convert_orm_to_entity(orm) for orm in result]
 
-    def search_at(self, date: datetime.datetime) -> list[Listing]:
-        raise NotImplementedError("Search by date is not yet implemented.")
-
-    def search_between(
-        self, date_from: datetime.datetime, date_to: datetime.datetime
-    ) -> list[Listing]:
-        raise NotImplementedError("Search by date range is not yet implemented.")
-
     def list_all(self, limit: int = 1000) -> list[Listing]:
         with self.db_service.create_session() as session:
-            query = select(ListingModel).limit(limit)
+            query = select(ListingModel).order_by(ListingModel.visited_at.desc()).limit(limit)
             result = session.execute(query).scalars().all()
             return [self._convert_orm_to_entity(orm) for orm in result]
+
+    def search(
+        self,
+        listing_id: str | None = None,
+        title: str | None = None,
+        min_price: int | None = None,
+        max_price: int | None = None,
+        min_date: datetime.datetime | None = None,
+        max_date: datetime.datetime | None = None,
+        run_id: str | None = None,
+        offset: int = 0,
+        limit: int = 10,
+    ) -> tuple[list[Listing], int]:
+        with self.db_service.create_session() as session:
+            query = select(ListingModel)
+
+            if listing_id:
+                query = query.filter(ListingModel.listing_id.like(f"%{listing_id}%"))
+            if title:
+                query = query.filter(ListingModel.title.like(f"%{title}%"))
+            if run_id:
+                query = query.filter(ListingModel.run_id == run_id)
+            if min_date:
+                query = query.filter(ListingModel.visited_at >= min_date)
+            if max_date:
+                query = query.filter(ListingModel.visited_at <= max_date)
+
+            if min_price is not None or max_price is not None:
+                price_clean = func.strip(
+                    func.replace(func.replace(ListingModel.price, "KM", ""), ".", "")
+                )
+                price_int = cast(price_clean, Integer)
+
+                query = query.filter(ListingModel.price.is_not(None))
+                query = query.filter(ListingModel.price != "")
+                query = query.filter(ListingModel.price != "Na upit")
+
+                if min_price is not None:
+                    query = query.filter(price_int >= min_price)
+                if max_price is not None:
+                    query = query.filter(price_int <= max_price)
+
+            # count results
+            count_query = select(func.count()).select_from(query.subquery())
+            total_count = session.execute(count_query).scalar() or 0
+
+            # pagination
+            query = query.order_by(ListingModel.visited_at.desc()).offset(offset).limit(limit)
+            result = session.execute(query).scalars().all()
+
+            entities = [self._convert_orm_to_entity(orm) for orm in result]
+            return entities, total_count
+
+    def get_unique_run_ids(self) -> list[str]:
+        with self.db_service.create_session() as session:
+            query = select(ListingModel.run_id).distinct().order_by(ListingModel.run_id.desc())
+            result = session.execute(query).scalars().all()
+            return [str(r) for r in result if r is not None]

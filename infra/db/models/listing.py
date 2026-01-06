@@ -1,7 +1,7 @@
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
-from infra.db.models.base import Base
+from infra.db.models.base import Base, SQLiteSafeDateTime
 
 
 class ListingModel(Base):
@@ -15,7 +15,7 @@ class ListingModel(Base):
     url = Column(String, nullable=False)
     title = Column(String, nullable=False)
     price = Column(String, nullable=False)
-    visited_at = Column(DateTime, nullable=True)
+    visited_at = Column(SQLiteSafeDateTime, nullable=True)
     run_id = Column(String, nullable=True)
 
     # relationships

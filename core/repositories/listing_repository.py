@@ -19,10 +19,19 @@ class ListingRepository(Protocol):
 
     def search_with_run_id(self, run_id: str) -> list[Listing]: ...
 
-    def search_at(self, date: datetime.datetime) -> list[Listing]: ...
-
-    def search_between(
-        self, date_from: datetime.datetime, date_to: datetime.datetime
-    ) -> list[Listing]: ...
-
     def list_all(self, limit: int = 1000) -> list[Listing]: ...
+
+    def search(
+        self,
+        listing_id: str | None = None,
+        title: str | None = None,
+        min_price: int | None = None,
+        max_price: int | None = None,
+        min_date: datetime.datetime | None = None,
+        max_date: datetime.datetime | None = None,
+        run_id: str | None = None,
+        offset: int = 0,
+        limit: int = 10,
+    ) -> tuple[list[Listing], int]: ...
+
+    def get_unique_run_ids(self) -> list[str]: ...

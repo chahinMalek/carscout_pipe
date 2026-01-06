@@ -1,6 +1,7 @@
+import datetime
 from dataclasses import asdict
 
-from sqlalchemy import inspect, select
+from sqlalchemy import Integer, cast, func, inspect, select
 
 from core.entities.vehicle import Vehicle
 from core.repositories.vehicle_repository import VehicleRepository
@@ -41,6 +42,65 @@ class SqlAlchemyVehicleRepository(VehicleRepository):
 
     def list_all(self, limit: int = 1000) -> list[Vehicle]:
         with self.db_service.create_session() as session:
-            query = select(VehicleModel).limit(limit)
+            query = select(VehicleModel).order_by(VehicleModel.last_visited_at.desc()).limit(limit)
             result = session.execute(query).scalars().all()
             return [self._convert_orm_to_entity(orm) for orm in result]
+
+    def search(
+        self,
+        listing_id: str | None = None,
+        title: str | None = None,
+        min_price: int | None = None,
+        max_price: int | None = None,
+        min_date: datetime.datetime | None = None,
+        max_date: datetime.datetime | None = None,
+        brand: str | None = None,
+        offset: int = 0,
+        limit: int = 10,
+    ) -> tuple[list[Vehicle], int]:
+        with self.db_service.create_session() as session:
+            query = select(VehicleModel)
+
+            # prepare filters
+            if listing_id:
+                query = query.filter(VehicleModel.listing_id.like(f"%{listing_id}%"))
+            if title:
+                query = query.filter(VehicleModel.title.like(f"%{title}%"))
+            if brand:
+                query = query.filter(VehicleModel.brand == brand)
+            if min_date:
+                query = query.filter(VehicleModel.last_visited_at >= min_date)
+            if max_date:
+                query = query.filter(VehicleModel.last_visited_at <= max_date)
+
+            if min_price is not None or max_price is not None:
+                price_clean = func.strip(
+                    func.replace(func.replace(VehicleModel.price, "KM", ""), ".", "")
+                )
+                price_int = cast(price_clean, Integer)
+
+                query = query.filter(VehicleModel.price.is_not(None))
+                query = query.filter(VehicleModel.price != "")
+                query = query.filter(VehicleModel.price != "Na upit")
+
+                if min_price is not None:
+                    query = query.filter(price_int >= min_price)
+                if max_price is not None:
+                    query = query.filter(price_int <= max_price)
+
+            # count results
+            count_query = select(func.count()).select_from(query.subquery())
+            total_count = session.execute(count_query).scalar() or 0
+
+            # pagination
+            query = query.order_by(VehicleModel.last_visited_at.desc()).offset(offset).limit(limit)
+            result = session.execute(query).scalars().all()
+
+            entities = [self._convert_orm_to_entity(orm) for orm in result]
+            return entities, total_count
+
+    def get_unique_brands(self) -> list[str]:
+        with self.db_service.create_session() as session:
+            query = select(VehicleModel.brand).distinct().order_by(VehicleModel.brand.asc())
+            result = session.execute(query).scalars().all()
+            return [str(r) for r in result if r is not None]

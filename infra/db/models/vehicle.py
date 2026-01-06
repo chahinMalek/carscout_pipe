@@ -1,7 +1,7 @@
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
-from infra.db.models.base import Base
+from infra.db.models.base import Base, SQLiteSafeDateTime
 
 
 class VehicleModel(Base):
@@ -15,7 +15,7 @@ class VehicleModel(Base):
     url = Column(String, nullable=False)
     title = Column(String, nullable=False)
     price = Column(String, nullable=False)
-    last_visited_at = Column(DateTime, nullable=True)
+    last_visited_at = Column(SQLiteSafeDateTime, nullable=True)
 
     # basic vehicle information
     location = Column(String, nullable=True)
@@ -54,7 +54,7 @@ class VehicleModel(Base):
     warranty = Column(String, nullable=True)
     security = Column(String, nullable=True)
     previous_owners = Column(String, nullable=True)
-    published_at = Column(DateTime, nullable=True)
+    published_at = Column(SQLiteSafeDateTime, nullable=True)
 
     # boolean fields
     registered = Column(String, nullable=True)
