@@ -203,9 +203,6 @@ coverage/
 ehthumbs.db
 Thumbs.db
 
-# Local data
-data/
-
 # Temporary files
 tmp/
 

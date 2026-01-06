@@ -10,11 +10,10 @@ This document serves as the project roadmap for CarScout Pipeline, outlining cur
 
 ## 🛠 Planned Features
 - [ ] **Streamlit Interface**: Dashboard and data export capabilities.
+
+## 🔮 Future / Potential Features
 - [ ] **Proxies**: Integrating proxy providers (opt-in via configs).
     - Adapters for ZenRows, ScrapingBee, and custom lists.
     - Health checks and automatic fallback capabilities.
-
-## 🔮 Future / Potential Features
 - [ ] **Scraping Engine**: Migration to Playwright for faster scraping.
 - [ ] **CLI Interface**: Quick launch and Simple CLI entrypoint (one command to run the entire pipeline).
-- [ ] **Analytical Storage**: Explore DuckDB as an alternative for analytical queries.
