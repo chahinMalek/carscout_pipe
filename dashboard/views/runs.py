@@ -7,7 +7,7 @@ import streamlit as st
 from core.entities.run import RunStatus
 from dashboard.components.export import render_export_sidebar
 from dashboard.components.pagination import render_pagination, render_pagination_controls
-from dashboard.views.utils import format_column_name
+from dashboard.views.utils import format_column_name, make_filter_hash
 from infra.containers import Container
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -19,7 +19,7 @@ def render_runs_view(container: Container) -> None:
 
     st.header("📊 Pipeline Runs")
 
-    # Filters
+    # collect filter values
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
         search_id = st.text_input("🔍 Search by Run ID", placeholder="e.g. 2024...")
@@ -36,29 +36,28 @@ def render_runs_view(container: Container) -> None:
             key="runs_page_size",
         )
 
-    # Pagination setup
-    status = None if status_filter == "All" else status_filter
-    filter_hash = f"runs-{search_id}-{status_filter}-{page_size}"
+    # build search parameters
+    search_params = {
+        "status": None if status_filter == "All" else status_filter,
+        "id_pattern": search_id,
+    }
+
+    # pagination setup
+    filter_hash = make_filter_hash({**search_params, "page_size": page_size})
     offset = render_pagination(
-        total_count=0,  # Will be updated after fetch
+        total_count=0,
         page_size=page_size,
         page_key="runs",
         filter_hash=filter_hash,
     )
 
-    # Fetch data
-    runs, total_count = repo.search(
-        status=status,
-        id_pattern=search_id,
-        offset=offset,
-        limit=page_size,
-    )
-
+    # fetch data
+    runs, total_count = repo.search(**search_params, offset=offset, limit=page_size)
     if not runs:
         st.info("No runs found matching the search criteria.")
         return
 
-    # Prepare DataFrame
+    # display table
     df = pd.DataFrame([asdict(r) for r in runs])
     df.columns = list(map(format_column_name, df.columns.tolist()))
     col_order = list(df)
@@ -67,17 +66,16 @@ def render_runs_view(container: Container) -> None:
     col_order.insert(1, "Duration")
     df = df[col_order]
 
-    # Display table
     current_page = st.session_state.get("runs_page", 1)
     st.write(f"Showing {len(runs)} of {total_count} runs (Page {current_page})")
     st.dataframe(df, width="stretch", hide_index=True)
 
-    # Pagination controls
+    # pagination controls
     render_pagination_controls(
         total_count=total_count,
         page_size=page_size,
         page_key="runs",
     )
 
-    # Export sidebar
+    # export sidebar
     render_export_sidebar(df=df, page_key="runs")
