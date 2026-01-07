@@ -1,4 +1,3 @@
-import datetime
 from dataclasses import asdict
 
 import pandas as pd
@@ -6,7 +5,7 @@ import streamlit as st
 
 from dashboard.components.export import render_export_sidebar
 from dashboard.components.pagination import render_pagination, render_pagination_controls
-from dashboard.views.utils import format_column_name
+from dashboard.views.utils import format_column_name, parse_date_range
 from infra.containers import Container
 
 
@@ -41,7 +40,7 @@ def render_vehicles_view(container: Container) -> None:
 
             # Date range
             date_range = st.date_input("Last Visited Range", value=[], key="v_date_range")
-            min_date, max_date = _parse_date_range(date_range)
+            min_date, max_date = parse_date_range(date_range)
 
     # Page size in sidebar
     page_size = st.sidebar.selectbox(
@@ -96,18 +95,3 @@ def render_vehicles_view(container: Container) -> None:
 
     # Export sidebar
     render_export_sidebar(df=df, page_key="vehicles")
-
-
-def _parse_date_range(
-    date_range: list | tuple,
-) -> tuple[datetime.datetime | None, datetime.datetime | None]:
-    min_date = None
-    max_date = None
-    if isinstance(date_range, list | tuple):
-        if len(date_range) == 2:
-            min_date = datetime.datetime.combine(date_range[0], datetime.time.min)
-            max_date = datetime.datetime.combine(date_range[1], datetime.time.max)
-        elif len(date_range) == 1:
-            min_date = datetime.datetime.combine(date_range[0], datetime.time.min)
-
-    return min_date, max_date
