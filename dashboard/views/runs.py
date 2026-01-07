@@ -1,0 +1,83 @@
+import datetime
+from dataclasses import asdict
+
+import pandas as pd
+import streamlit as st
+
+from core.entities.run import RunStatus
+from dashboard.components.export import render_export_sidebar
+from dashboard.components.pagination import render_pagination, render_pagination_controls
+from dashboard.views.utils import format_column_name
+from infra.containers import Container
+
+pd.set_option("future.no_silent_downcasting", True)
+
+
+def render_runs_view(container: Container) -> None:
+    """Render the pipeline runs view."""
+    repo = container.run_repository()
+
+    st.header("📊 Pipeline Runs")
+
+    # Filters
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        search_id = st.text_input("🔍 Search by Run ID", placeholder="e.g. 2024...")
+    with col2:
+        status_filter = st.selectbox(
+            "🎯 Filter by Status",
+            options=["All"] + RunStatus.all_statuses(),
+        )
+    with col3:
+        page_size = st.selectbox(
+            "📏 Page Size",
+            options=[10, 25, 50, 100],
+            index=0,
+            key="runs_page_size",
+        )
+
+    # Pagination setup
+    status = None if status_filter == "All" else status_filter
+    filter_hash = f"runs-{search_id}-{status_filter}-{page_size}"
+    offset = render_pagination(
+        total_count=0,  # Will be updated after fetch
+        page_size=page_size,
+        page_key="runs",
+        filter_hash=filter_hash,
+    )
+
+    # Fetch data
+    runs, total_count = repo.search(
+        status=status,
+        id_pattern=search_id,
+        offset=offset,
+        limit=page_size,
+    )
+
+    if not runs:
+        st.info("No runs found matching the search criteria.")
+        return
+
+    # Prepare DataFrame
+    df = pd.DataFrame([asdict(r) for r in runs])
+    df.columns = list(map(format_column_name, df.columns.tolist()))
+    col_order = list(df)
+    completed_at = pd.to_datetime(df["Completed At"].fillna(value=datetime.datetime.now()))
+    df["Duration"] = completed_at - df["Started At"]
+    col_order.insert(1, "Duration")
+    df = df[col_order]
+
+    # Display table
+    current_page = st.session_state.get("runs_page", 1)
+    st.write(f"Showing {len(runs)} of {total_count} runs (Page {current_page})")
+    st.dataframe(df, width="stretch", hide_index=True)
+
+    # Pagination controls
+    render_pagination_controls(
+        total_count=total_count,
+        page_size=page_size,
+        page_key="runs",
+    )
+
+    # Export sidebar
+    render_export_sidebar(df=df, page_key="runs")
