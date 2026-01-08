@@ -69,7 +69,7 @@ class SqlAlchemyVehicleRepository(VehicleRepository):
                 query = query.filter(VehicleModel.last_visited_at <= max_date)
 
             if min_price is not None or max_price is not None:
-                price_clean = func.strip(
+                price_clean = func.trim(
                     func.replace(func.replace(VehicleModel.price, "KM", ""), ".", "")
                 )
                 price_int = cast(price_clean, Integer)

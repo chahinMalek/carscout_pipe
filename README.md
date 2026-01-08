@@ -2,8 +2,8 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?style=flat&logo=python&logoColor=white)](https://python.org)
 [![CI](https://github.com/chahinMalek/carscout_pipe/actions/workflows/ci.yml/badge.svg)](https://github.com/chahinMalek/carscout_pipe/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-84%20passed-success)](https://github.com/chahinMalek/carscout_pipe/actions)
-[![Coverage](https://img.shields.io/badge/coverage-84%25-green)](https://github.com/chahinMalek/carscout_pipe/actions)
+[![Tests](https://img.shields.io/badge/tests-103%20passed-success)](https://github.com/chahinMalek/carscout_pipe/actions)
+[![Coverage](https://img.shields.io/badge/coverage-96%25-green)](https://github.com/chahinMalek/carscout_pipe/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 

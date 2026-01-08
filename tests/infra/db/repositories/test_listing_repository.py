@@ -220,3 +220,114 @@ class TestSqlAlchemyListingRepository:
         assert entity.title == sample_listing.title
         assert entity.price == sample_listing.price
         assert entity.run_id == sample_listing.run_id
+
+    def test_search(self, repo):
+        now = datetime.now(UTC)
+        l1 = Listing(
+            id="L1",
+            url="U1",
+            title="Toyota Corolla 2020",
+            price="20000 KM",
+            visited_at=now,
+            run_id="run-001",
+        )
+        l2 = Listing(
+            id="L2",
+            url="U2",
+            title="Toyota Corolla 2021",
+            price="25000 KM",
+            visited_at=now - timedelta(days=1),
+            run_id="run-001",
+        )
+        l3 = Listing(
+            id="L3",
+            url="U3",
+            title="Honda Civic 2019",
+            price="18000 KM",
+            visited_at=now - timedelta(days=2),
+            run_id="run-002",
+        )
+
+        repo.add(l1)
+        repo.add(l2)
+        repo.add(l3)
+
+        # search by title
+        results, count = repo.search(title="Toyota")
+        assert count == 2
+        assert {r.id for r in results} == {"L1", "L2"}
+
+        # search by listing_id (partial match)
+        results, count = repo.search(listing_id="L1")
+        assert count == 1
+        assert results[0].id == "L1"
+
+        # search by run_id
+        results, count = repo.search(run_id="run-002")
+        assert count == 1
+        assert results[0].id == "L3"
+
+        # search by price range
+        results, count = repo.search(min_price=17000, max_price=19000)
+        assert count == 1
+        assert results[0].id == "L3"
+
+        # search by date range
+        results, count = repo.search(
+            min_date=now - timedelta(hours=1), max_date=now + timedelta(hours=1)
+        )
+        assert count == 1
+        assert results[0].id == "L1"
+
+        # search by max_date only
+        results, count = repo.search(max_date=now - timedelta(days=2))
+        assert count == 1
+        assert results[0].id == "L3"
+
+        # search with pagination
+        results, count = repo.search(limit=1, offset=0)
+        assert len(results) == 1
+        assert count == 3
+
+    def test_get_unique_run_ids(self, repo):
+        now = datetime.now(UTC)
+        repo.add(Listing(id="l1", url="u1", title="t1", price="p1", visited_at=now, run_id="run-A"))
+        repo.add(Listing(id="l2", url="u2", title="t2", price="p2", visited_at=now, run_id="run-B"))
+        repo.add(Listing(id="l3", url="u3", title="t3", price="p3", visited_at=now, run_id="run-A"))
+
+        run_ids = repo.get_unique_run_ids()
+        assert "run-A" in run_ids
+        assert "run-B" in run_ids
+        assert len(run_ids) == 2
+
+    def test_get_listings_per_run(self, repo):
+        now = datetime.now(UTC)
+        repo.add(Listing(id="l1", url="u1", title="t1", price="p1", visited_at=now, run_id="run-1"))
+        repo.add(
+            Listing(
+                id="l2",
+                url="u2",
+                title="t2",
+                price="p2",
+                visited_at=now + timedelta(seconds=1),
+                run_id="run-1",
+            )
+        )
+        repo.add(
+            Listing(
+                id="l3",
+                url="u3",
+                title="t3",
+                price="p3",
+                visited_at=now + timedelta(seconds=2),
+                run_id="run-2",
+            )
+        )
+
+        metrics = repo.get_listings_per_run()
+        assert len(metrics) == 2
+
+        assert metrics[0]["run_id"] == "run-2"
+        assert metrics[0]["listing_count"] == 1
+        assert metrics[1]["run_id"] == "run-1"
+        assert metrics[1]["listing_count"] == 2

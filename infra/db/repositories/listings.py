@@ -118,7 +118,7 @@ class SqlAlchemyListingRepository(ListingRepository):
                 query = query.filter(ListingModel.visited_at <= max_date)
 
             if min_price is not None or max_price is not None:
-                price_clean = func.strip(
+                price_clean = func.trim(
                     func.replace(func.replace(ListingModel.price, "KM", ""), ".", "")
                 )
                 price_int = cast(price_clean, Integer)
