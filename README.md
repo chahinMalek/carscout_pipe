@@ -66,6 +66,7 @@ carscout_pipe/
 │   ├── entities/
 │   ├── services/
 │   └── repositories/ # Abstract repository definitions
+├── 📂 dashboard/     # Streamlit dashboard
 ├── 📂 infra/         # Infrastructure implementations
 │   ├── db/           # Database models and sessions
 │   ├── scraping/     # Selenium/HTTPX drivers
