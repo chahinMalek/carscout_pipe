@@ -8,7 +8,7 @@ This document serves as the project roadmap for CarScout Pipeline, outlining cur
 - [x] **CI/CD**: Implement GitHub Actions CI workflows.
 - [x] **Quality**: Add repository badges (tests, coverage, code quality) & architecture diagrams.
 - [x] **Streamlit Interface**: Dashboard and data export capabilities.
-- [ ] **Test Coverage**: Achieve test coverage of at least 90%.
+- [x] **Test Coverage**: Achieve test coverage of at least 90%. (Currently 96%)
 
 ## 🔮 Future / Potential Features
 - [ ] **Proxies**: Integrating proxy providers (opt-in via configs).

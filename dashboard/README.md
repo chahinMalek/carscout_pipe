@@ -22,5 +22,11 @@ This directory contains the Streamlit-based dashboard for CarScout Pipeline.
 
 3. Open your browser at `http://localhost:8501`.
 
-## Docker Integration (Coming Soon)
-The dashboard will be integrated as a separate service in the `docker-compose.yml` configuration.
+## Docker Integration
+The dashboard is integrated as a service in the `docker-compose.yml` configuration.
+
+To run everything including the dashboard:
+```bash
+docker-compose up -d
+```
+Access the dashboard at `http://localhost:8501`.

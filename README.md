@@ -26,6 +26,7 @@ It solves the problem of ephemeral listing data by building a historic dataset o
 - **🧩 Modular Design**: Fully containerized with dependency injection via `dependency-injector`.
 - **⚙️ Orchestrated Workflows**: Apache Airflow DAGs manage the two-stage pipeline (Listings → Vehicles) with error tracking and backfills.
 - **💾 Relational Storage**: Data is structured and validated before storage in SQLite (scalable to Postgres).
+- **📊 Visual Insights**: Built-in Streamlit dashboard for real-time metrics, data exploration, and exporting results (CSV/Parquet).
 
 ## 🏗 Architecture
 

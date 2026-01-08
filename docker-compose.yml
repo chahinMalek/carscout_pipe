@@ -68,6 +68,13 @@ services:
     command: triggerer
     restart: always
 
+  dashboard:
+    <<: *airflow-common
+    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    restart: always
+
 volumes:
   airflow-db:
   airflow-logs:
