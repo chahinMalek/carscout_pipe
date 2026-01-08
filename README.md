@@ -17,7 +17,7 @@
 
 **CarScout Pipeline** is a robust, local-first solution designed to scrape, process, and catalogue vehicle listings from [olx.ba](https://olx.ba). Built with modern Python practices, it leverages **Apache Airflow** for orchestration and **Selenium/HTTPX** for resilient data extraction.
 
-It solves the problem of ephemeral listing data by building a historic dataset of vehicle pricing and specifications for market analysis.
+You can use it to build a database of historical vehicle prices that can power your analytics projects.
 
 ## ✨ Features
 
