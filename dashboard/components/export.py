@@ -7,8 +7,6 @@ import streamlit as st
 
 
 class ExportFormat(str, Enum):
-    """Supported export file formats."""
-
     CSV = "CSV"
     PARQUET = "Parquet"
     JSON = "JSON"
@@ -19,13 +17,6 @@ class ExportFormat(str, Enum):
 
 
 def render_export_sidebar(df: pd.DataFrame, page_key: str) -> None:
-    """
-    Render the export sidebar with format selection and download button.
-
-    Args:
-        df: The DataFrame to export.
-        page_key: Unique key for the export radio button.
-    """
     st.sidebar.divider()
     st.sidebar.header("📥 Export This View")
 
@@ -43,7 +34,7 @@ def render_export_sidebar(df: pd.DataFrame, page_key: str) -> None:
         data=export_data,
         file_name=f"{page_key}_{now}.{export_format.lower()}",
         mime=_get_mime_type(export_format),
-        use_container_width=True,
+        width="stretch",
     )
 
 

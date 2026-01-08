@@ -5,6 +5,7 @@ from sqlalchemy import Integer, cast, func, inspect, select
 
 from core.entities.vehicle import Vehicle
 from core.repositories.vehicle_repository import VehicleRepository
+from infra.db.models.listing import ListingModel
 from infra.db.models.vehicle import VehicleModel
 from infra.db.service import DatabaseService
 
@@ -98,3 +99,53 @@ class SqlAlchemyVehicleRepository(VehicleRepository):
             query = select(VehicleModel.brand).distinct().order_by(VehicleModel.brand.asc())
             result = session.execute(query).scalars().all()
             return [str(r) for r in result if r is not None]
+
+    def get_new_vehicles_per_run(self, limit: int = 50) -> list[dict]:
+        with self.db_service.create_session() as session:
+            # subquery to find the earliest visited_at and its run_id for each listing_id
+            first_occurrence = (
+                select(
+                    ListingModel.listing_id,
+                    ListingModel.run_id,
+                    ListingModel.visited_at,
+                )
+                .distinct(ListingModel.listing_id)
+                .order_by(ListingModel.listing_id, ListingModel.visited_at.asc())
+                .subquery()
+            )
+
+            # only include listing_ids that have vehicles
+            vehicles_with_first_run = (
+                select(
+                    first_occurrence.c.run_id,
+                    first_occurrence.c.visited_at,
+                )
+                .select_from(first_occurrence)
+                .join(
+                    VehicleModel,
+                    VehicleModel.listing_id == first_occurrence.c.listing_id,
+                )
+                .subquery()
+            )
+
+            # group by run_id and count
+            query = (
+                select(
+                    vehicles_with_first_run.c.run_id,
+                    func.min(vehicles_with_first_run.c.visited_at).label("run_started_at"),
+                    func.count().label("new_vehicle_count"),
+                )
+                .group_by(vehicles_with_first_run.c.run_id)
+                .order_by(func.min(vehicles_with_first_run.c.visited_at).desc())
+                .limit(limit)
+            )
+            result = session.execute(query).all()
+
+            return [
+                {
+                    "run_id": row.run_id,
+                    "run_started_at": row.run_started_at,
+                    "new_vehicle_count": row.new_vehicle_count,
+                }
+                for row in result
+            ]

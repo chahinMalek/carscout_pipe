@@ -89,3 +89,30 @@ class SqlAlchemyRunRepository(RunRepository):
 
             entities = [self._convert_orm_to_entity(orm) for orm in result]
             return entities, total_count
+
+    def get_run_metrics(self, limit: int = 50) -> list[dict]:
+        with self.db_service.create_session() as session:
+            query = (
+                select(RunModel)
+                .filter(RunModel.completed_at.is_not(None))
+                .order_by(RunModel.started_at.desc())
+                .limit(limit)
+            )
+            result = session.execute(query).scalars().all()
+
+            metrics = []
+            for run in result:
+                if run.completed_at and run.started_at:
+                    duration = (run.completed_at - run.started_at).total_seconds()
+                    metrics.append(
+                        {
+                            "id": run.id,
+                            "started_at": run.started_at,
+                            "duration_seconds": duration,
+                            "status": run.status,
+                            "listings": run.listings_scraped,
+                            "vehicles": run.vehicles_scraped,
+                            "errors": run.errors_count,
+                        }
+                    )
+            return metrics

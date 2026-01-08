@@ -148,3 +148,27 @@ class SqlAlchemyListingRepository(ListingRepository):
             query = select(ListingModel.run_id).distinct().order_by(ListingModel.run_id.desc())
             result = session.execute(query).scalars().all()
             return [str(r) for r in result if r is not None]
+
+    def get_listings_per_run(self, limit: int = 50) -> list[dict]:
+        with self.db_service.create_session() as session:
+            query = (
+                select(
+                    ListingModel.run_id,
+                    func.min(ListingModel.visited_at).label("run_started_at"),
+                    func.count(ListingModel.id).label("listing_count"),
+                )
+                .filter(ListingModel.run_id.is_not(None))
+                .group_by(ListingModel.run_id)
+                .order_by(func.min(ListingModel.visited_at).desc())
+                .limit(limit)
+            )
+            result = session.execute(query).all()
+
+            return [
+                {
+                    "run_id": row.run_id,
+                    "run_started_at": row.run_started_at,
+                    "listing_count": row.listing_count,
+                }
+                for row in result
+            ]

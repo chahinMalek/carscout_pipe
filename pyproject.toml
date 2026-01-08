@@ -1,6 +1,6 @@
 [project]
 name = "carscout-pipe"
-version = "0.1.5"
+version = "0.1.6"
 description = "Open-source scraping pipeline for olx.ba"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -22,6 +22,7 @@ dependencies = [
     "python-json-logger>=4.0.0",
     "streamlit>=1.52.0",
     "pyarrow>=22.0.0",
+    "plotly>=6.5.0",
 ]
 
 [project.optional-dependencies]

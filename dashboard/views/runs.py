@@ -5,24 +5,37 @@ import pandas as pd
 import streamlit as st
 
 from core.entities.run import RunStatus
+from dashboard.components.charts import render_run_duration_chart, render_run_performance_chart
 from dashboard.components.export import render_export_sidebar
 from dashboard.components.pagination import render_pagination, render_pagination_controls
-from dashboard.views.utils import format_column_name, make_filter_hash
+from dashboard.views.utils import format_column_name, hash_filter_params
 from infra.containers import Container
 
 pd.set_option("future.no_silent_downcasting", True)
 
 
 def render_runs_view(container: Container) -> None:
-    """Render the pipeline runs view."""
     repo = container.run_repository()
 
-    st.header("📊 Pipeline Runs")
+    # Charts section
+    st.header("📈 Run Analytics")
+
+    # Fetch chart data
+    run_metrics = repo.get_run_metrics(limit=30)
+
+    # Render charts
+    render_run_duration_chart(run_metrics)
+    render_run_performance_chart(run_metrics)
+
+    st.markdown("---")
+
+    # Search section
+    st.header("📊 Search Runs")
 
     # collect filter values
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        search_id = st.text_input("🔍 Search by Run ID", placeholder="e.g. 2024...")
+        search_id = st.text_input("🔍 Search by Run ID", placeholder="Search Run ID ...")
     with col2:
         status_filter = st.selectbox(
             "🎯 Filter by Status",
@@ -43,9 +56,8 @@ def render_runs_view(container: Container) -> None:
     }
 
     # pagination setup
-    filter_hash = make_filter_hash({**search_params, "page_size": page_size})
+    filter_hash = hash_filter_params({**search_params, "page_size": page_size})
     offset = render_pagination(
-        total_count=0,
         page_size=page_size,
         page_key="runs",
         filter_hash=filter_hash,

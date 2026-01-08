@@ -3,6 +3,7 @@ from dataclasses import asdict
 import pandas as pd
 import streamlit as st
 
+from dashboard.components.charts import render_new_vehicles_per_run_chart
 from dashboard.components.export import render_export_sidebar
 from dashboard.components.pagination import render_pagination, render_pagination_controls
 from dashboard.views.utils import format_column_name, hash_filter_params, parse_date_range
@@ -10,9 +11,16 @@ from infra.containers import Container
 
 
 def render_vehicles_view(container: Container) -> None:
-    """Render the vehicles data view."""
     repo = container.vehicle_repository()
 
+    # Chart section
+    st.header("📈 Vehicles Analytics")
+    new_vehicles_per_run = repo.get_new_vehicles_per_run(limit=30)
+    render_new_vehicles_per_run_chart(new_vehicles_per_run)
+
+    st.markdown("---")
+
+    # Search section
     st.header("📊 Vehicles Data")
 
     # collect filter values
@@ -60,7 +68,6 @@ def render_vehicles_view(container: Container) -> None:
     # pagination setup
     filter_hash = hash_filter_params({**search_params, "page_size": page_size})
     offset = render_pagination(
-        total_count=0,
         page_size=page_size,
         page_key="vehicles",
         filter_hash=filter_hash,
