@@ -70,9 +70,10 @@ class TestSqlAlchemyRunRepository:
 
     def test_get_run_metrics(self, repo):
         now = datetime.now(UTC)
+
         # completed run with some metrics
-        run = Run(
-            id="run-metrics",
+        completed_run = Run(
+            id="run-complete",
             started_at=now - timedelta(minutes=10),
             status=RunStatus.SUCCESS,
             completed_at=now,
@@ -80,16 +81,30 @@ class TestSqlAlchemyRunRepository:
             vehicles_scraped=50,
             errors_count=2,
         )
-        repo.add(run)
+        repo.add(completed_run)
 
-        # incomplete run (should be ignored by metrics)
-        repo.add(Run(id="run-incomplete", started_at=now))
+        # incomplete run (should also be displayed)
+        incomplete_run = Run(
+            id="run-incomplete",
+            started_at=now - timedelta(minutes=5),
+            status=RunStatus.RUNNING,
+        )
+        repo.add(incomplete_run)
 
         metrics = repo.get_run_metrics()
-        assert len(metrics) == 1
+        assert len(metrics) == 2
+
+        # method returns runs in descending order
         m = metrics[0]
-        assert m["id"] == "run-metrics"
-        assert m["duration_seconds"] == 600.0
-        assert m["listings"] == 100
-        assert m["vehicles"] == 50
-        assert m["errors"] == 2
+        assert m["id"] == incomplete_run.id
+        assert "duration_seconds" in m
+        assert m["listings"] == 0
+        assert m["vehicles"] == 0
+        assert m["errors"] == 0
+
+        m = metrics[1]
+        assert m["id"] == completed_run.id
+        assert m["duration_seconds"] == 600
+        assert m["listings"] == completed_run.listings_scraped
+        assert m["vehicles"] == completed_run.vehicles_scraped
+        assert m["errors"] == completed_run.errors_count

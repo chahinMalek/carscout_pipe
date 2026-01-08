@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import func, select
 
 from core.entities.run import Run, RunStatus
@@ -94,7 +96,7 @@ class SqlAlchemyRunRepository(RunRepository):
         with self.db_service.create_session() as session:
             query = (
                 select(RunModel)
-                .filter(RunModel.completed_at.is_not(None))
+                # .filter(RunModel.completed_at.is_not(None))
                 .order_by(RunModel.started_at.desc())
                 .limit(limit)
             )
@@ -104,15 +106,17 @@ class SqlAlchemyRunRepository(RunRepository):
             for run in result:
                 if run.completed_at and run.started_at:
                     duration = (run.completed_at - run.started_at).total_seconds()
-                    metrics.append(
-                        {
-                            "id": run.id,
-                            "started_at": run.started_at,
-                            "duration_seconds": duration,
-                            "status": run.status,
-                            "listings": run.listings_scraped,
-                            "vehicles": run.vehicles_scraped,
-                            "errors": run.errors_count,
-                        }
-                    )
+                else:
+                    duration = (datetime.datetime.now() - run.started_at).total_seconds()
+                metrics.append(
+                    {
+                        "id": run.id,
+                        "started_at": run.started_at,
+                        "duration_seconds": duration,
+                        "status": run.status,
+                        "listings": run.listings_scraped,
+                        "vehicles": run.vehicles_scraped,
+                        "errors": run.errors_count,
+                    }
+                )
             return metrics

@@ -69,7 +69,18 @@ services:
     restart: always
 
   dashboard:
-    <<: *airflow-common
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    env_file:
+      - .env.docker
+    environment:
+      PYTHONPATH: /opt/app
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
+    volumes:
+      - ./:/opt/app
+      - ./data:/opt/app/data
     command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
     ports:
       - "8501:8501"
