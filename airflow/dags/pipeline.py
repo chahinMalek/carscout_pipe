@@ -12,17 +12,29 @@ def on_pipeline_failure(context):
     Callback triggered when the DAG run fails.
     Ensures the 'runs' table reflects the failure and records the error message.
     """
+    container = Container.create_and_patch()
     dag_run = context.get("dag_run")
-
-    # pull run_id from 'prepare_run' return value
-    ti = dag_run.get_task_instance("prepare_run")
-    run_id = ti.xcom_pull() if ti else None
-
-    if not run_id:
-        # nothing to do if run_id is not found
+    if not dag_run:
+        logger = container.logger_factory().create("airflow.on_pipeline_failure")
+        logger.error("DAG run not found, skipping...")
         return
 
-    container = Container.create_and_patch()
+    run_id = context["ti"].xcom_pull(task_ids="prepare_run", key="return_value")
+    if isinstance(run_id, list) and len(run_id) > 0:
+        run_id = run_id[0]
+
+    if not run_id:
+        run_id = dag_run.conf.get("run_id")
+
+    if not run_id:
+        logger = container.logger_factory().create("airflow.on_pipeline_failure")
+        logger.error("Run ID not found, skipping...")
+        return
+
+    logger = container.logger_factory().create(
+        "airflow.on_pipeline_failure",
+        context={"run_id": str(run_id)},
+    )
     run_service = container.run_service()
 
     # identify which task failed
@@ -34,28 +46,49 @@ def on_pipeline_failure(context):
     err_msg = (
         f"Pipeline failed at task: {task_id} (index: {map_index})."
         if map_index is not None
-        else f". Error: {str(exception)}"
+        else f"Pipeline failed at task: {task_id}. Error: {str(exception)}"
         if exception
-        else ""
+        else f"Pipeline failed at task: {task_id}."
     )
-    run_service.fail_run(run_id, err_msg)
+    logger.error(err_msg)
+    logger.info("Marking run as failed.")
+    run_service.fail_run(str(run_id), err_msg)
+    logger.info("Run marked as failed.")
 
 
 def on_pipeline_success(context):
     """
     Callback triggered when the entire DAG completes successfully.
     """
+    container = Container.create_and_patch()
     dag_run = context.get("dag_run")
-    ti = dag_run.get_task_instance("prepare_run")
-    run_id = ti.xcom_pull() if ti else None
-
-    if not run_id:
-        # nothing to do if run_id is not found
+    if not dag_run:
+        logger = container.logger_factory().create("airflow.on_pipeline_success")
+        logger.error("DAG run not found, skipping...")
         return
 
-    container = Container.create_and_patch()
+    run_id = context["ti"].xcom_pull(task_ids="prepare_run", key="return_value")
+    if isinstance(run_id, list) and len(run_id) > 0:
+        run_id = run_id[0]
+
+    if not run_id:
+        run_id = dag_run.conf.get("run_id")
+
+    if not run_id:
+        logger = container.logger_factory().create("airflow.on_pipeline_success")
+        logger.error("Run ID not found, skipping...")
+        return
+
+    logger = container.logger_factory().create(
+        "airflow.on_pipeline_success",
+        context={"run_id": run_id},
+    )
     run_service = container.run_service()
-    run_service.complete_run(run_id)
+
+    # Ensure run_id is a string before passing it to internal services
+    logger.info("Marking run as completed.")
+    run_service.complete_run(str(run_id))
+    logger.info("Pipeline completed successfully.")
 
 
 @dag(
@@ -237,11 +270,18 @@ def carscout_pipeline():
         logger = container.logger_factory().create("airflow.summarize")
 
         logger.info("--- RUN SUMMARY ---")
-        logger.info(f"Run ID: {vehicle_results['run_id']}")
-        logger.info(f"Total Number of Listings: {vehicle_results['total_listings']}")
-        logger.info(f"Total Listings Processed: {vehicle_results['processed_listings']}")
-        logger.info(f"Total Vehicles Scraped: {vehicle_results['success_listings']}")
-        logger.info(f"Total Vehicles Failed: {vehicle_results['failed_listings']}")
+        if not vehicle_results:
+            logger.warning(
+                "No vehicle results to summarize (upstream might have been skipped or failed)."
+            )
+            return
+
+        run_id = vehicle_results.get("run_id", "unknown")
+        logger.info(f"Run ID: {run_id}")
+        logger.info(f"Total Number of Listings: {vehicle_results.get('total_listings', 0)}")
+        logger.info(f"Total Listings Processed: {vehicle_results.get('processed_listings', 0)}")
+        logger.info(f"Total Vehicles Scraped: {vehicle_results.get('success_listings', 0)}")
+        logger.info(f"Total Vehicles Failed: {vehicle_results.get('failed_listings', 0)}")
 
     # orchestration flow
     task_run_id = prepare_run()
